@@ -673,6 +673,7 @@
 //#else
 			status = "disable";
 ///#endif
+			qcom,soc-hi-res;
 
 			qcom,fg-batt-soc@4000 {
 				status = "okay";
