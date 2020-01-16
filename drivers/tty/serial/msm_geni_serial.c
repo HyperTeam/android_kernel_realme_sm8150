@@ -31,6 +31,10 @@
 #include <linux/tty_flip.h>
 #include <soc/qcom/boot_stats.h>
 #include <linux/dma-mapping.h>
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
+#include <soc/oppo/boot_mode.h>
+#endif /* VENDOR_EDIT */
 
 /* UART specific GENI registers */
 #define SE_UART_LOOPBACK_CFG		(0x22C)
@@ -185,6 +189,12 @@ struct msm_geni_serial_port {
 
 static const struct uart_ops msm_geni_serial_pops;
 static struct uart_driver msm_geni_console_driver;
+
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
+static struct uart_driver msm_geni_console_driver_no_cons;
+#endif
+
 static struct uart_driver msm_geni_serial_hs_driver;
 static int handle_rx_console(struct uart_port *uport,
 			unsigned int rx_fifo_wc,
@@ -214,6 +224,34 @@ static void msm_geni_serial_set_manual_flow(bool enable,
 
 static struct msm_geni_serial_port msm_geni_console_port;
 static struct msm_geni_serial_port msm_geni_serial_ports[GENI_UART_NR_PORTS];
+
+#ifdef VENDOR_EDIT
+//Jiaochao.Shi@BSP.CHG.Basic 2018/05/01 add for console
+static struct pinctrl *serial_pinctrl = NULL;
+static struct pinctrl_state *serial_pinctrl_state_disable = NULL;
+#endif
+
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01  Add for debug console reg issue 969323*/
+bool boot_with_console(void)
+{
+	if(get_boot_mode() == MSM_BOOT_MODE__FACTORY)
+	{
+		return true;
+	}
+	else {
+		if(oem_get_uartlog_status() == true)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+}
+EXPORT_SYMBOL(boot_with_console);
+#endif/*VENDOR_EDIT*/
 
 static void msm_geni_serial_config_port(struct uart_port *uport, int cfg_flags)
 {
@@ -734,6 +772,12 @@ __msm_geni_serial_console_write(struct uart_port *uport, const char *s,
 	int fifo_depth = DEF_FIFO_DEPTH_WORDS;
 	int tx_wm = DEF_TX_WM;
 
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
+	if (boot_with_console() == false) {
+		return;
+	}
+#endif
 	for (i = 0; i < count; i++) {
 		if (s[i] == '\n')
 			new_line++;
@@ -2434,6 +2478,17 @@ static struct uart_driver msm_geni_console_driver = {
 	.nr =  GENI_UART_NR_PORTS,
 	.cons = &cons_ops,
 };
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
+static struct uart_driver msm_geni_console_driver_no_cons = {
+	.owner = THIS_MODULE,
+	.driver_name = "msm_geni_console",
+	.dev_name = "ttyMSM",
+	.nr =  GENI_UART_NR_PORTS,
+	.cons = NULL,
+};
+#endif
+
 #else
 static int console_register(struct uart_driver *drv)
 {
@@ -2625,6 +2680,32 @@ static int msm_geni_serial_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "%s: No matching device found", __func__);
 		return -ENODEV;
 	}
+
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
+	if (boot_with_console() == false) {
+		if (drv->cons) {
+		    #ifdef VENDOR_EDIT
+			//Jiaochao.Shi@BSP.CHG.Basic 2018/05/01 add for console
+			pr_err("%s: console start get pinctrl\n", __FUNCTION__);
+			serial_pinctrl = devm_pinctrl_get(&pdev->dev);
+			if (IS_ERR_OR_NULL(serial_pinctrl)) {
+				dev_err(&pdev->dev, "No serial_pinctrl config specified!\n");
+			} else {
+				serial_pinctrl_state_disable =
+					pinctrl_lookup_state(serial_pinctrl, PINCTRL_SLEEP);
+				if (IS_ERR_OR_NULL(serial_pinctrl_state_disable)) {
+					dev_err(&pdev->dev, "No serial_pinctrl_state_disable config specified!\n");
+				} else {
+					pinctrl_select_state(serial_pinctrl, serial_pinctrl_state_disable);
+				}
+			}
+			#endif
+			dev_info(&pdev->dev, "boot with console false\n");
+			return -ENODEV;
+		}
+	}
+#endif
 
 	if (pdev->dev.of_node) {
 		if (drv->cons) {
@@ -2941,6 +3022,14 @@ static int msm_geni_serial_sys_suspend_noirq(struct device *dev)
 	struct uart_port *uport = &port->uport;
 
 	if (uart_console(uport)) {
+		#ifdef VENDOR_EDIT
+		//Nanwei.Deng@BSP.CHG.Basic 2018/6/23 add for console resume exception in release build
+		#ifdef CONFIG_OPPO_DAILY_BUILD
+		if(boot_with_console() == true)
+		#else
+		if(oem_get_uartlog_status() == false || get_boot_mode() == MSM_BOOT_MODE__FACTORY)
+		#endif
+		#endif/*VENDOR_EDIT*/
 		uart_suspend_port((struct uart_driver *)uport->private_data,
 					uport);
 	} else {
@@ -3071,20 +3160,46 @@ static int __init msm_geni_serial_init(void)
 		msm_geni_console_port.uport.flags = UPF_BOOT_AUTOCONF;
 		msm_geni_console_port.uport.line = i;
 	}
-
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
 	ret = console_register(&msm_geni_console_driver);
+#else
+	if (boot_with_console() == true) {
+		ret = console_register(&msm_geni_console_driver);
+	} else {
+		ret = console_register(&msm_geni_console_driver_no_cons);
+	}
+#endif /* VENDOR_EDIT */
 	if (ret)
 		return ret;
 
 	ret = uart_register_driver(&msm_geni_serial_hs_driver);
 	if (ret) {
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
 		uart_unregister_driver(&msm_geni_console_driver);
+#else
+		if (boot_with_console() == true) {
+			uart_unregister_driver(&msm_geni_console_driver);
+		} else {
+			uart_unregister_driver(&msm_geni_console_driver_no_cons);
+		}
+#endif /* VENDOR_EDIT */
 		return ret;
 	}
 
 	ret = platform_driver_register(&msm_geni_serial_platform_driver);
 	if (ret) {
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
 		console_unregister(&msm_geni_console_driver);
+#else
+		if (boot_with_console() == true) {
+			console_unregister(&msm_geni_console_driver);
+		} else {
+			console_unregister(&msm_geni_console_driver_no_cons);
+		}
+#endif /* VENDOR_EDIT */
 		uart_unregister_driver(&msm_geni_serial_hs_driver);
 		return ret;
 	}
@@ -3098,7 +3213,17 @@ static void __exit msm_geni_serial_exit(void)
 {
 	platform_driver_unregister(&msm_geni_serial_platform_driver);
 	uart_unregister_driver(&msm_geni_serial_hs_driver);
+
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for console
 	console_unregister(&msm_geni_console_driver);
+#else
+	if (boot_with_console() == true) {
+		console_unregister(&msm_geni_console_driver);
+	} else {
+		console_unregister(&msm_geni_console_driver_no_cons);
+	}
+#endif /* VENDOR_EDIT */
 }
 module_exit(msm_geni_serial_exit);
 
