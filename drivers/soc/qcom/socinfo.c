@@ -34,7 +34,10 @@
 #include <soc/qcom/socinfo.h>
 #include <linux/soc/qcom/smem.h>
 #include <soc/qcom/boot_stats.h>
-
+#ifdef VENDOR_EDIT
+//zhye@BSP.Kernel.Config, 2019-10-19, add for 19081 sm8150_plus config
+#include <soc/oppo/oppo_project.h>
+#endif
 #define BUILD_ID_LENGTH 32
 #define CHIP_ID_LENGTH 32
 #define SMEM_IMAGE_VERSION_BLOCKS_COUNT 32
@@ -368,8 +371,12 @@ static struct msm_soc_info cpu_of_id[] = {
 	[339] = {MSM_CPU_SM8150, "SM8150"},
 
 	/* sm8150p ID */
-	[361] = {MSM_CPU_SM8150, "SM8150P"},
-
+#ifdef VENDOR_EDIT
+//zhye@BSP.Kernel.Config, 2019-10-19, add for 19081 sm8150_plus config
+	[361] = {MSM_CPU_SM8150, "SM8150_Plus"},
+#else//VENDOR_EDIT
+	[361] = {MSM_CPU_SM8150, "SM8150p"},
+#endif//VENDOR_EDIT
 	/* sa8155 ID */
 	[362] = {MSM_CPU_SA8155, "SA8155"},
 
@@ -507,7 +514,12 @@ static char *msm_read_hardware_id(void)
 		goto err_path;
 	if (!cpu_of_id[socinfo->v0_1.id].soc_id_string)
 		goto err_path;
-
+#ifdef VENDOR_EDIT
+//zhye@BSP.Kernel.Config, 2019-10-19, add for 19081 sm8150_plus config
+	if (is_project(OPPO_19081) || is_project(OPPO_19781) || is_project(OPPO_19688) || is_project(OPPO_19696))
+		socinfo->v0_1.id = 361;
+	pr_err("socinfo->v0_1.id=%d\n",socinfo->v0_1.id);
+#endif//VENDOR_EDIT
 	ret = strlcat(msm_soc_str, cpu_of_id[socinfo->v0_1.id].soc_id_string,
 			sizeof(msm_soc_str));
 	if (ret > sizeof(msm_soc_str))

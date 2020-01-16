@@ -23,3 +23,6 @@ obj-$(CONFIG_SOC_TI)		+= ti/
 obj-$(CONFIG_ARCH_U8500)	+= ux500/
 obj-$(CONFIG_PLAT_VERSATILE)	+= versatile/
 obj-$(CONFIG_ARCH_ZX)		+= zte/
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2014/10/25 for oppo
+obj-$(CONFIG_OPPO_ARCH_FILE)	+= oppo/
+#endif//VENDOR_EDIT
