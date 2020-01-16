@@ -483,6 +483,12 @@ static int _sde_encoder_phys_cmd_handle_ppdone_timeout(
 	if (!atomic_add_unless(&phys_enc->pending_kickoff_cnt, -1, 0))
 		return 0;
 
+#ifdef VENDOR_EDIT
+/*Mark.Yao@PSW.MM.Display.Lcd.Stability, 2018-05-24,avoid recursion handle*/
+	if (cmd_enc->pp_timeout_report_cnt >= PP_TIMEOUT_MAX_TRIALS)
+		return -EFAULT;
+#endif
+
 	cmd_enc->pp_timeout_report_cnt++;
 	pending_kickoff_cnt = atomic_read(&phys_enc->pending_kickoff_cnt) + 1;
 
@@ -616,7 +622,12 @@ static int _sde_encoder_phys_cmd_poll_write_pointer_started(
 				phys_enc->hw_intf->idx - INTF_0,
 				timeout_us,
 				ret);
+		#ifndef VENDOR_EDIT
+		/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-12-18 fix crash when unplug screen*/
 		SDE_DBG_DUMP("all", "dbg_bus", "vbif_dbg_bus", "panic");
+		#else
+		SDE_DBG_DUMP("all", "dbg_bus", "vbif_dbg_bus");
+		#endif
 	}
 
 end:
