@@ -1832,6 +1832,10 @@ struct super_operations {
 	void (*evict_inode) (struct inode *);
 	void (*put_super) (struct super_block *);
 	int (*sync_fs)(struct super_block *sb, int wait);
+#ifdef VENDOR_EDIT
+	/*xuweijie1@TECH.BSP.Kernel.Storage, 2019-07-10, add issue_flush_fs*/
+	int (*issue_flush_fs)(struct super_block *sb);
+#endif /*VENDOR_EDIT*/	
 	int (*freeze_super) (struct super_block *);
 	int (*freeze_fs) (struct super_block *);
 	int (*thaw_super) (struct super_block *);

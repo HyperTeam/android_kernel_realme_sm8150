@@ -441,6 +441,12 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		goto out;
 	}
 
+	if (d_inode(lower_new_dir_dentry) && d_inode(lower_new_dir_dentry)->i_nlink == 0) {
+		printk("sdcardfs: sdcardfs_rename new inode i_nlink is 0\n");
+		err = -EINVAL;
+		goto out;
+	}
+
 	err = vfs_rename2(lower_mnt,
 			 d_inode(lower_old_dir_dentry), lower_old_dentry,
 			 d_inode(lower_new_dir_dentry), lower_new_dentry,
