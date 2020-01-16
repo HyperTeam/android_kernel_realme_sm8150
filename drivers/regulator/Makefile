@@ -85,7 +85,11 @@ obj-$(CONFIG_REGULATOR_QPNP_AMOLED) += qpnp-amoled-regulator.o
 obj-$(CONFIG_REGULATOR_QPNP_OLEDB) += qpnp-oledb-regulator.o
 obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
 obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
-obj-$(CONFIG_REGULATOR_PM8008) += qcom_pm8008-regulator.o
+#ifdef VENDOR_EDIT
+#zhixian.Mai@camera, 2019/06/16, Add for pm8008 driver
+#obj-$(CONFIG_REGULATOR_PM8008) += qcom_pm8008-regulator.o
+obj-y += qcom_pm8008-regulator.o
+#endif
 obj-$(CONFIG_REGULATOR_PV88060) += pv88060-regulator.o
 obj-$(CONFIG_REGULATOR_PV88080) += pv88080-regulator.o
 obj-$(CONFIG_REGULATOR_PV88090) += pv88090-regulator.o
@@ -136,5 +140,6 @@ obj-$(CONFIG_REGULATOR_SPM) += spm-regulator.o
 obj-$(CONFIG_REGULATOR_RPMH) += rpmh-regulator.o
 obj-$(CONFIG_REGULATOR_STUB) += stub-regulator.o
 obj-$(CONFIG_VIRTIO_REGULATOR) += virtio_regulator.o
+obj-y += ktd2151.o
 
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
