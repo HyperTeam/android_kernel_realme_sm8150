@@ -103,4 +103,8 @@ obj-$(CONFIG_QCOM_AOP_DDR_MESSAGING) += aop_ddr_msgs.o
 obj-$(CONFIG_MSM_HAB) += hab/
 obj-$(CONFIG_QCOM_HYP_CORE_CTL) += hyp_core_ctl.o
 obj-$(CONFIG_QCOM_AOP_DDRSS_COMMANDS) += aop_ddrss_cmds.o
+#ifdef VENDOR_EDIT
+#xiang.fei@PSW.MM.AudioDriver.HeadsetDet, 2019/07/13, Add for max20328
+obj-$(CONFIG_QCOM_MAX20328_I2C) += max20328.o
+#endif
 obj-$(CONFIG_RMNET_CTL) += rmnet_ctl/
