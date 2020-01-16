@@ -109,3 +109,9 @@ obj-$(CONFIG_TOUCHSCREEN_ST)		+= st/
 obj-$(CONFIG_TOUCHSCREEN_HIMAX_CHIPSET)	+= hxchipset/
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM)	+= synaptics_tcm/
 obj-$(CONFIG_TOUCHSCREEN_RAYDIUM_CHIPSET)  += raydium_wt030/
+
+#ifdef VENDOR_EDIT
+#Wanghao@Bsp.group.Tp,2017-09-20,Added for common touchpanel driver
+obj-$(CONFIG_TOUCHPANEL_OPPO) += oppo_touchscreen/
+obj-$(CONFIG_TOUCHPANEL_OPPO) += touch.o
+#endif
