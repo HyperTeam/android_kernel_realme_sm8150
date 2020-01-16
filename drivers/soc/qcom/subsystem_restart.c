@@ -1829,6 +1829,16 @@ struct subsys_device *subsys_register(struct subsys_desc *desc)
 	subsys->notif_state = -1;
 	subsys->desc->sysmon_pid = -1;
 	subsys->desc->state = NULL;
+#ifdef VENDOR_EDIT
+	/*YiXue.Ge@PSW.BSP.Kernel.Driver,2017/05/15,
+	 * Add for init subsyst restart level as RESET_SUBSYS_COUPLED at mp build
+	 */
+	#ifndef CONFIG_OPPO_DAILY_BUILD
+		#ifndef CONFIG_OPPO_SPECIAL_BUILD
+		subsys->restart_level = RESET_SUBSYS_COUPLED;
+		#endif
+	#endif
+#endif
 	strlcpy(subsys->desc->fw_name, desc->name,
 			sizeof(subsys->desc->fw_name));
 

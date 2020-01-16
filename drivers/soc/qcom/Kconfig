@@ -857,6 +857,19 @@ config QCOM_FSA4480_I2C
 	  for accessing the device, switching between USB and Audio
 	  modes, changing orientation.
 
+#ifndef VENDOR_EDIT
+#Le.Li@PSW.MM.AudioDriver.HeadsetDet, 2018/11/07, Modify SW to max20328
+config QCOM_MAX20328_I2C
+	bool "Fairchild MAX20328 chip with I2C"
+	select REGMAP_I2C
+	depends on I2C
+	help
+	  Support for the Fairchild MAX20328 IC switch chip controlled
+	  using I2C. This driver provides common support
+	  for accessing the device, switching between USB and Audio
+	  modes, changing orientation.
+#endif /* VENDOR_EDIT */
+
 if (MSM_PM || MSM_PM_LEGACY)
 menuconfig MSM_IDLE_STATS
 	bool "Collect idle statistics"
