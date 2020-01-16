@@ -47,6 +47,40 @@
 
 #include "irq-gic-common.h"
 
+#ifdef VENDOR_EDIT
+//sunfaliang@BSP.Power.Basic, 2019/08/07, add for P->Q Checklist.
+#include <linux/wakeup_reason.h>
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+//Sunfaliang@BSP.Power.Basic 2019/10/25 add for wakeup irq statics.
+static char *irq_name_modem = "modem";
+static char *irq_name_modem_ipa = "ipa";
+static char *irq_name_wlan_data = "WLAN";
+static char *irq_name_glink_native_adsp = "glink-native-adsp"; //eg:glink-native-adsp
+static char *irq_name_glink_native_cdsp = "glink-native-cdsp"; //eg:glink-native-cdsp
+static char *irq_name_glink_native_slpi = "glink-native-slpi"; //eg:glink-native-slpi
+static char *irq_name_glink_native_modem = "glink-native-modem"; //eg:glink-native-modem
+static char *irq_name_adsp = "adsp";
+static char *irq_name_cdsp = "cdsp";
+static char *irq_name_slpi = "spli";
+
+extern u64 wakeup_source_count_adsp;
+extern u64 wakeup_source_count_slpi;
+extern u64 wakeup_source_count_cdsp;
+extern u64 wakeup_source_count_modem;
+extern u64 wakeup_source_count_wifi;
+extern u64 wakeup_source_count_glink;
+
+#define MODEM_WAKEUP_SRC_NUM 3
+#define MODEM_DIAG_WS_INDEX 0
+#define MODEM_IPA_WS_INDEX 1
+#define MODEM_QMI_WS_INDEX 2
+
+extern int modem_wakeup_src_count[MODEM_WAKEUP_SRC_NUM];
+#endif /* VENDOR_EDIT */
+
+
 struct redist_region {
 	void __iomem		*redist_base;
 	phys_addr_t		phys_base;
@@ -438,7 +472,8 @@ static int gic_suspend(void)
 #endif
 	return 0;
 }
-
+//yangmingjin@BSP.POWER.Basic 2019/05/30 add for RM_TAG_POWER_DEBUG
+/* VENDOR_EDIT */
 static void gic_show_resume_irq(struct gic_chip_data *gic)
 {
 	unsigned int i;
@@ -470,7 +505,52 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 		else if (desc->action && desc->action->name)
 			name = desc->action->name;
 
+		#ifndef VENDOR_EDIT
+		//SunFaliang@BSP.Power.Basic, 2019/10/25, add for statistical wakeup source.
 		pr_warn("%s: %d triggered %s\n", __func__, irq, name);
+		#else
+		if(name != NULL)
+		{
+			pr_warn("%s: %d triggered %s\n", __func__, irq, name);
+			log_irq_wakeup_reason(irq);
+
+			//Lei.Zhang@PSW.CN.WiFi.Hardware.1501794, 2019/03/02
+			//Add irq of WiFi for SDM710
+			if(strncmp(name, irq_name_wlan_data, strlen(irq_name_wlan_data)) == 0)
+			{
+				wakeup_source_count_wifi++;
+			}
+			else if(strncmp(name, irq_name_modem, strlen(irq_name_modem)) == 0 ||
+				strncmp(name, irq_name_modem_ipa, strlen(irq_name_modem_ipa)) == 0 ||
+				strncmp(name, irq_name_glink_native_modem, strlen(irq_name_glink_native_modem)) == 0)
+			{
+				wakeup_source_count_modem++;
+				if(strncmp(name, irq_name_modem_ipa, strlen(irq_name_modem_ipa)) == 0)
+				{
+					modem_wakeup_src_count[MODEM_IPA_WS_INDEX]++;
+				}
+				else if(strncmp(name, irq_name_modem, strlen(irq_name_modem)) == 0)
+				{
+					modem_wakeup_src_count[MODEM_QMI_WS_INDEX]++;
+				}
+			}
+			else if(strncmp(name, irq_name_adsp, strlen(irq_name_adsp)) == 0 ||
+				strncmp(name, irq_name_glink_native_adsp, strlen(irq_name_glink_native_adsp)) == 0)
+			{
+				wakeup_source_count_adsp++;
+			}
+			else if(strncmp(name, irq_name_cdsp, strlen(irq_name_cdsp)) == 0 ||
+				strncmp(name, irq_name_glink_native_cdsp, strlen(irq_name_glink_native_adsp)) == 0)
+			{
+				wakeup_source_count_cdsp++;
+			}
+			else if(strncmp(name, irq_name_slpi, strlen(irq_name_slpi)) == 0 ||
+				strncmp(name, irq_name_glink_native_slpi, strlen(irq_name_glink_native_slpi)) == 0)
+			{
+				wakeup_source_count_slpi++;
+			}
+		}
+		#endif //VENDOR_EDIT
 	}
 }
 
@@ -698,10 +778,18 @@ static int __gic_populate_rdist(struct redist_region *region, void __iomem *ptr)
 		gic_data_rdist_rd_base() = ptr;
 		gic_data_rdist()->phys_base = region->phys_base + offset;
 
+#ifndef VENDOR_EDIT
+		//Nanwei.Deng@BSP.power.Basic 2018/05/01 
 		pr_info("CPU%d: found redistributor %lx region %d:%pa\n",
 			smp_processor_id(), mpidr,
 			(int)(region - gic_data.redist_regions),
 			&gic_data_rdist()->phys_base);
+#else
+		pr_debug("CPU%d: found redistributor %lx region %d:%pa\n",
+			smp_processor_id(), mpidr,
+			(int)(region - gic_data.redist_regions),
+			&gic_data_rdist()->phys_base);
+#endif		
 		return 0;
 	}
 
