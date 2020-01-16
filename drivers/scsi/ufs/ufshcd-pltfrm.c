@@ -476,6 +476,19 @@ static void ufshcd_init_lanes_per_dir(struct ufs_hba *hba)
 	}
 }
 
+#ifdef VENDOR_EDIT
+//cuixiaogang@src.hypnus.2018.04.02. add support for ufs clk scale
+#include <linux/ufshcd-platform.h>
+struct ufs_hba *ufs_store_hba[MAX_UFS_STORE_HBA] = {0 };
+static int index = 0;
+static bool device_use_ufs;
+bool storage_is_ufs(void)
+{
+	return device_use_ufs;
+}
+EXPORT_SYMBOL(storage_is_ufs);
+#endif /* VENDOR_EDIT */
+
 /**
  * ufshcd_pltfrm_init - probe routine of the driver
  * @pdev: pointer to Platform device handle
@@ -565,6 +578,14 @@ int ufshcd_pltfrm_init(struct platform_device *pdev,
 
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
+
+#ifdef VENDOR_EDIT
+//cuixiaogang@src.hypnus.2018.04.02. add support for ufs clk scale
+	if (index < MAX_UFS_STORE_HBA) {
+		ufs_store_hba[index++] = hba;
+		device_use_ufs = true;
+	}
+#endif /* VENDOR_EDIT */
 
 	return 0;
 dealloc_host:
