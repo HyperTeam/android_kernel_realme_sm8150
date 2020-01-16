@@ -262,11 +262,21 @@ done:
 }
 EXPORT_SYMBOL(subsys_notif_add_subsys);
 
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+int modem_show_info = 0;
+u64 modem_head_addr = 0;
+#endif /* VENDOR_EDIT */
+
 int subsys_notif_queue_notification(void *subsys_handle,
 					enum subsys_notif_type notif_type,
 					void *data)
 {
 	struct subsys_notif_info *subsys = subsys_handle;
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+	int ret;
+#endif /* VENDOR_EDIT */
 
 	if (!subsys)
 		return -EINVAL;
@@ -274,8 +284,20 @@ int subsys_notif_queue_notification(void *subsys_handle,
 	if (notif_type < 0 || notif_type >= SUBSYS_NOTIF_TYPE_COUNT)
 		return -EINVAL;
 
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+	if(strcmp(subsys->name, "modem")==0){
+		modem_show_info = 1;
+		modem_head_addr = (u64)&subsys->subsys_notif_rcvr_list.head;
+	}
+	ret = srcu_notifier_call_chain(&subsys->subsys_notif_rcvr_list,
+				       notif_type, data);
+	modem_show_info = 0;
+	return ret;
+#else
 	return srcu_notifier_call_chain(&subsys->subsys_notif_rcvr_list,
 				       notif_type, data);
+#endif /* VENDOR_EDIT */
 }
 EXPORT_SYMBOL(subsys_notif_queue_notification);
 
