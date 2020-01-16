@@ -153,7 +153,24 @@ enum ufs_desc_def_size {
 	QUERY_DESC_INTERCONNECT_DEF_SIZE	= 0x06,
 	QUERY_DESC_GEOMETRY_DEF_SIZE		= 0x44,
 	QUERY_DESC_POWER_DEF_SIZE		= 0x62,
+#ifdef VENDOR_EDIT
+	//xiaofan.yang@PSW.TECH.Stability, 2019/03/15,Add for check storage endurance
+	QUERY_DESC_HEALTH_DEF_SIZE              = 0x25,
+#endif
 };
+
+#ifdef VENDOR_EDIT
+//xiaofan.yang@PSW.TECH.Stability, 2019/03/15,Add for check storage endurance
+/* Health descriptor parameters offsets in bytes*/
+enum health_desc_param {
+       HEALTH_DESC_PARAM_LEN                   = 0x0,
+       HEALTH_DESC_PARAM_TYPE                  = 0x1,
+       HEALTH_DESC_PARAM_EOL_INFO              = 0x2,
+       HEALTH_DESC_PARAM_LIFE_TIME_EST_A       = 0x3,
+       HEALTH_DESC_PARAM_LIFE_TIME_EST_B       = 0x4,
+       //HEALTH_DESC_PARAM_VENDOR_PROPINFO	   = 0x5,
+};
+#endif
 
 /* Unit descriptor parameters offsets in bytes*/
 enum unit_desc_param {
