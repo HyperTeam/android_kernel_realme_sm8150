@@ -16,12 +16,31 @@
 #define CAM_RELEASE_DEV                         (CAM_COMMON_OPCODE_BASE + 0x6)
 #define CAM_SD_SHUTDOWN                         (CAM_COMMON_OPCODE_BASE + 0x7)
 #define CAM_FLUSH_REQ                           (CAM_COMMON_OPCODE_BASE + 0x8)
+#ifndef VENDOR_EDIT
+/*Modified by Zhengrong.Zhang@Cam.Drv, 20180421, for [ois calibration]*/
 #define CAM_COMMON_OPCODE_MAX                   (CAM_COMMON_OPCODE_BASE + 0x9)
-
+#else
+#define CAM_GET_FUSE_ID                         (CAM_COMMON_OPCODE_BASE + 0x9)
+#define CAM_GET_OIS_GYRO_OFFSET                 (CAM_COMMON_OPCODE_BASE + 0xA)
+#define CAM_GET_OIS_HALL_POSITION               (CAM_COMMON_OPCODE_BASE + 0xB)
+/*added by hongbo.dai@Cam.Drv, 20180501, for [Cam ois ]*/
+#define CAM_OIS_GYRO_OFFSET_CALIBRATION         (CAM_COMMON_OPCODE_BASE + 0xC)
+#define CAM_GET_OIS_EIS_HALL                    (CAM_COMMON_OPCODE_BASE + 0xD)
+#define CAM_SET_GYRO_POWER_STATUS               (CAM_COMMON_OPCODE_BASE + 0xE)
+#define CAM_GET_GYRO_NOISE                      (CAM_COMMON_OPCODE_BASE + 0xF)
+/*add by yufeng@camera, 20190618 for write eeprom */
+#define CAM_WRITE_CALIBRATION_DATA              (CAM_COMMON_OPCODE_BASE + 0x10)
+#define CAM_CHECK_CALIBRATION_DATA              (CAM_COMMON_OPCODE_BASE + 0x11)
+#define CAM_WRITE_AE_SYNC_DATA                  (CAM_COMMON_OPCODE_BASE + 0x12)
+#define CAM_GET_GYRO_ENERGY                     (CAM_COMMON_OPCODE_BASE + 0x13)
+#define CAM_COMMON_OPCODE_MAX                   (CAM_COMMON_OPCODE_BASE + 0x14)
+#endif
 #define CAM_COMMON_OPCODE_BASE_v2           0x150
 #define CAM_ACQUIRE_HW                      (CAM_COMMON_OPCODE_BASE_v2 + 0x1)
 #define CAM_RELEASE_HW                      (CAM_COMMON_OPCODE_BASE_v2 + 0x2)
-#define CAM_DUMP_REQ                        (CAM_COMMON_OPCODE_BASE_v2 + 0x3)
+#ifdef VENDOR_EDIT  //add dpc read for imx471
+#define CAM_GET_DPC_DATA                    (CAM_COMMON_OPCODE_BASE_v2 + 0x3)
+#endif
 
 #define CAM_EXT_OPCODE_BASE                     0x200
 #define CAM_CONFIG_DEV_EXTERNAL                 (CAM_EXT_OPCODE_BASE + 0x1)
@@ -65,6 +84,16 @@ enum flush_type_t {
 	CAM_FLUSH_TYPE_MAX
 };
 
+#ifdef VENDOR_EDIT
+/*add by hongbo.dai@camera 20190219, for get hall dat for EIS*/
+#define HALL_MAX_NUMBER 12
+struct ois_hall_type {
+	uint32_t dataNum;
+	uint32_t mdata[HALL_MAX_NUMBER];
+	uint32_t timeStamp;
+};
+#endif
+
 /**
  * struct cam_control - Structure used by ioctl control for camera
  *
@@ -86,6 +115,11 @@ struct cam_control {
 #define VIDIOC_CAM_CONTROL \
 	_IOWR('V', BASE_VIDIOC_PRIVATE, struct cam_control)
 
+#ifdef VENDOR_EDIT
+/*add by hongbo.dai@Camera,20180326 for AT test*/
+#define VIDIOC_CAM_FTM_POWNER_UP 0
+#define VIDIOC_CAM_FTM_POWNER_DOWN 1
+#endif
 /**
  * struct cam_hw_version - Structure for HW version of camera devices
  *
@@ -625,30 +659,6 @@ struct cam_cmd_mem_regions {
 	uint32_t version;
 	uint32_t num_regions;
 	struct cam_cmd_mem_region_info map_info_array[1];
-};
-
-/**
- * struct cam_dump_req_cmd -
- *        Dump the information of issue req id
- *
- * @issue_req_id   : Issue Request Id
- * @session_handle : Session Handle
- * @link_hdl       : link handle
- * @dev_handle     : Device Handle
- * @error_type     : Error Type
- * @buf_handle     : Buffer Handle
- * @offset         : offset for the buffer
- * @reserved       : Reserved
- */
-struct cam_dump_req_cmd {
-	int64_t        issue_req_id;
-	int32_t        session_handle;
-	int32_t        link_hdl;
-	int32_t        dev_handle;
-	int32_t        error_type;
-	uint32_t       buf_handle;
-	int32_t        offset;
-	uint32_t       reserved;
 };
 
 
