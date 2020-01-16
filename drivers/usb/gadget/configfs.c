@@ -1680,8 +1680,15 @@ static void android_disconnect(struct usb_gadget *gadget)
 	acc_disconnect();
 #endif
 	gi->connected = 0;
-	if (!gi->unbinding)
-		schedule_work(&gi->work);
+#ifdef VENDOR_EDIT
+        /* zhangkun@BSP.BaseDrv.CHG.Basic, 2019/01/28, disconnect and connect timeout*/
+        if (strstr(current->comm, "init") && !in_interrupt())
+            pr_notice("%s, SKIP work, in_irq<%d>\n", __func__, (int)in_interrupt());
+        else
+            schedule_work(&gi->work);
+#else
+        schedule_work(&gi->work);
+#endif
 	composite_disconnect(gadget);
 }
 #endif
