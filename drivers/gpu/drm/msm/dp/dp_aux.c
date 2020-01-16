@@ -14,7 +14,12 @@
 
 #define pr_fmt(fmt)	"[drm-dp] %s: " fmt, __func__
 
+#ifndef VENDOR_EDIT
+/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-11-05 support max20328 dp switch */
 #include <linux/soc/qcom/fsa4480-i2c.h>
+#else
+#include <linux/soc/qcom/max20328.h>
+#endif /* VENDOR_EDIT */
 #include <linux/usb/usbpd.h>
 #include <linux/delay.h>
 
@@ -817,7 +822,12 @@ static int dp_aux_configure_aux_switch(struct dp_aux *dp_aux,
 {
 	struct dp_aux_private *aux;
 	int rc = 0;
+#ifndef VENDOR_EDIT
+/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-11-05 support max20328 dp switch */
 	enum fsa_function event = FSA_USBC_DISPLAYPORT_DISCONNECTED;
+#else
+	enum max20328_function event = MAX20328_USBC_DISPLAYPORT_DISCONNECTED;
+#endif
 
 	if (!dp_aux) {
 		pr_err("invalid input\n");
@@ -828,19 +838,35 @@ static int dp_aux_configure_aux_switch(struct dp_aux *dp_aux,
 	aux = container_of(dp_aux, struct dp_aux_private, dp_aux);
 
 	if (!aux->aux_switch_node) {
+		#ifndef VENDOR_EDIT
+		/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-11-05 support max20328 dp switch */
 		pr_debug("undefined fsa4480 handle\n");
+		#else
+		pr_debug("undefined max20328 handle\n");
+		#endif
 		rc = -EINVAL;
 		goto end;
 	}
 
 	if (enable) {
 		switch (orientation) {
+		#ifndef VENDOR_EDIT
+		/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-11-05 support max20328 dp switch */
 		case ORIENTATION_CC1:
 			event = FSA_USBC_ORIENTATION_CC1;
 			break;
 		case ORIENTATION_CC2:
 			event = FSA_USBC_ORIENTATION_CC2;
 			break;
+		#else
+		case ORIENTATION_CC1:
+			event = MAX20328_USBC_ORIENTATION_CC1;
+			break;
+		case ORIENTATION_CC2:
+			event = MAX20328_USBC_ORIENTATION_CC2;
+			break;
+		#endif
+
 		default:
 			pr_err("invalid orientation\n");
 			rc = -EINVAL;
@@ -848,12 +874,19 @@ static int dp_aux_configure_aux_switch(struct dp_aux *dp_aux,
 		}
 	}
 
-	pr_debug("enable=%d, orientation=%d, event=%d\n",
+	pr_err("enable=%d, orientation=%d, event=%d\n",
 			enable, orientation, event);
 
+	#ifndef VENDOR_EDIT
+	/*Mark.Yao@PSW.MM.Display.LCD.Stable,2018-11-05 support max20328 dp switch */
 	rc = fsa4480_switch_event(aux->aux_switch_node, event);
 	if (rc)
 		pr_err("failed to configure fsa4480 i2c device (%d)\n", rc);
+	#else
+	rc = max20328_switch_event(event);
+	if (rc)
+		pr_err("failed to configure max20328 i2c device (%d)\n", rc);
+	#endif
 end:
 	return rc;
 }
