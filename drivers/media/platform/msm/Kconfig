@@ -38,6 +38,13 @@ config MSM_CAMERA_DEBUG
     ---help---
       Enable printk() debug for msm camera
 
+menuconfig OPPO_CAMERA
+    bool "Oppo Spectra camera directory support"
+    depends on ARCH_QCOM && VIDEO_V4L2 && I2C
+    ---help---
+      Say Y here to enable selecting the vendor oppo camera driver
+      directory to compile into the kernel.
+
 menuconfig MSMB_CAMERA
     bool "QTI MSM camera and video capture 2.0 support"
     depends on ARCH_QCOM && VIDEO_V4L2 && I2C
