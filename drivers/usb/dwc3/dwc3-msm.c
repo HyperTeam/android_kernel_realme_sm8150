@@ -55,6 +55,13 @@
 #include "debug.h"
 #include "xhci.h"
 
+#ifdef VENDOR_EDIT
+	/* tongfeng.Huang@BSP.CHG.Basic, 2019/05/09,  Add for delay headset uevent */
+#include <linux/time.h>
+#include <linux/jiffies.h>
+#include <linux/sched/clock.h>
+#endif
+
 #define SDP_CONNETION_CHECK_TIME 10000 /* in ms */
 
 /* time out to wait for USB cable status notification (in ms)*/
@@ -2850,6 +2857,10 @@ static int dwc3_msm_resume(struct dwc3_msm *mdwc)
  */
 static void dwc3_ext_event_notify(struct dwc3_msm *mdwc)
 {
+#ifdef VENDOR_EDIT
+	/* tongfeng.Huang@BSP.CHG.Basic, 2019/05/09,  Add for delay headset uevent */
+	static unsigned long long t = 0;
+#endif
 	/* Flush processing any pending events before handling new ones */
 	flush_delayed_work(&mdwc->sm_work);
 
@@ -2877,7 +2888,19 @@ static void dwc3_ext_event_notify(struct dwc3_msm *mdwc)
 		clear_bit(B_SUSPEND, &mdwc->inputs);
 	}
 
-	queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, 0);
+#ifdef VENDOR_EDIT
+	/* tongfeng.Huang@BSP.CHG.Basic, 2019/05/09,  Add for delay headset uevent */
+	if(t <= 12)
+		t = cpu_clock(smp_processor_id())/1000000000;//convert to s
+
+	dev_dbg(mdwc->dev, "last_secs %lu\n",t);
+	if(t<=12)
+		queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, msecs_to_jiffies(5000));
+	else
+		queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, 0);
+#else
+		queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, 0);
+#endif
 }
 
 static void dwc3_resume_work(struct work_struct *w)
@@ -3586,7 +3609,12 @@ static int dwc_dpdm_cb(struct notifier_block *nb, unsigned long evt, void *p)
 		dev_dbg(mdwc->dev, "%s: disable state:%s\n", __func__,
 				dwc3_drd_state_string(mdwc->drd_state));
 		if (mdwc->drd_state == DRD_STATE_UNDEFINED)
+#ifndef VENDOR_EDIT
+/*LiYue@BSP.CHG.Basic, 2019/08/19, modify for ssusb can not in low power mode*/
+			schedule_delayed_work(&mdwc->sm_work, 0);
+#else
 			queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, 0);
+#endif
 		break;
 	default:
 		dev_dbg(mdwc->dev, "%s: unknown event state:%s\n", __func__,
@@ -4535,6 +4563,16 @@ static int dwc3_msm_gadget_vbus_draw(struct dwc3_msm *mdwc, unsigned int mA)
 	if (mdwc->max_power == mA || psy_type != POWER_SUPPLY_TYPE_USB)
 		return 0;
 
+#ifdef VENDOR_EDIT
+	/* Jianchao.Shi@BSP.CHG.Basic, 2017/05/04, sjc Add for charging */
+	dev_info(mdwc->dev, "Avail curr from USB = %u, pre max_power = %u\n", mA, mdwc->max_power);
+	if (mA == 0 || mA == 2) {
+		return 0;
+	}
+#else
+	dev_info(mdwc->dev, "Avail curr from USB = %u\n", mA);
+#endif
+
 	/* Set max current limit in uA */
 	pval.intval = 1000 * mA;
 
@@ -4567,7 +4605,10 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 	int ret = 0;
 	unsigned long delay = 0;
 	const char *state;
-
+#ifdef VENDOR_EDIT
+/* Yichun.Chen  PSW.BSP.CHG  2019-08-07  for detect CDP */
+	u32 reg; 
+#endif
 	if (mdwc->dwc3)
 		dwc = platform_get_drvdata(mdwc->dwc3);
 
@@ -4636,6 +4677,16 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 				atomic_read(&mdwc->dev->power.usage_count));
 			dwc3_otg_start_peripheral(mdwc, 1);
 			mdwc->drd_state = DRD_STATE_PERIPHERAL;
+#ifdef VENDOR_EDIT
+/* Yichun.Chen	PSW.BSP.CHG  2019-08-07  for detect CDP */
+			if (!dwc->softconnect && get_psy_type(mdwc) == POWER_SUPPLY_TYPE_USB_CDP) { 
+				dbg_event(0xFF, "cdp pullup dp", 0); 
+					reg = dwc3_readl(dwc->regs, DWC3_DCTL); 
+					reg |= DWC3_DCTL_RUN_STOP; 
+					dwc3_writel(dwc->regs, DWC3_DCTL, reg); 
+					break; 
+			}
+#endif
 			work = 1;
 		} else {
 			dwc3_msm_gadget_vbus_draw(mdwc, 0);
