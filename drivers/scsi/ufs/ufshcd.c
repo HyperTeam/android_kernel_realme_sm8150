@@ -51,6 +51,10 @@
 #include "ufs-debugfs.h"
 #include "ufs-qcom.h"
 
+#ifdef VENDOR_EDIT
+//zhenjian Jiang@PSW.BSP.Storage.UFS, 2018-05-04 add for ufs device in /proc/devinfo 
+#include <soc/oppo/device_info.h>
+#endif
 #ifdef CONFIG_DEBUG_FS
 
 static int ufshcd_tag_req_type(struct request *rq)
@@ -211,7 +215,13 @@ static void ufshcd_update_uic_error_cnt(struct ufs_hba *hba, u32 reg, int type)
 				 UTP_TASK_REQ_COMPL |\
 				 UFSHCD_ERROR_MASK)
 /* UIC command timeout, unit: ms */
-#define UIC_CMD_TIMEOUT	500
+#ifdef VENDOR_EDIT
+/* Kai Huang@BSP.Storage.Ufs 2019/12/17 Case:04354401  add qualcomm patch for logic to check uic
+command timeout errors  */
+#define UIC_CMD_TIMEOUT	1000
+#else
+#define UIC_CMD_TIMEOUT 500
+#endif
 
 /* NOP OUT retries waiting for NOP IN response */
 #define NOP_OUT_RETRIES    10
@@ -2068,6 +2078,11 @@ static ssize_t ufshcd_clkscale_enable_show(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", hba->clk_scaling.is_allowed);
 }
 
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus.2018.05.09. add mutex lock here for race condition
+static DEFINE_MUTEX(ufshcd_clkscale_lock);
+#endif /* VENDOR_EDIT */
+
 static ssize_t ufshcd_clkscale_enable_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -2079,6 +2094,10 @@ static ssize_t ufshcd_clkscale_enable_store(struct device *dev,
 		return -EINVAL;
 
 	value = !!value;
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus.2018.05.09. add mutex lock here for race condition
+	mutex_lock(&ufshcd_clkscale_lock);
+#endif /* VENDOR_EDIT */
 	if (value == hba->clk_scaling.is_allowed)
 		goto out;
 
@@ -2103,8 +2122,68 @@ static ssize_t ufshcd_clkscale_enable_store(struct device *dev,
 	ufshcd_release(hba, false);
 	pm_runtime_put_sync(hba->dev);
 out:
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus.2018.05.09. add mutex lock here for race condition
+	mutex_unlock(&ufshcd_clkscale_lock);
+#endif /* VENDOR_EDIT */
 	return count;
 }
+
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus.2018.04.02. add support for ufs clk scale
+int ufshcd_clk_scaling_enable(struct ufs_hba *hba, int val)
+{
+	bool allowed = !!val;
+	int err;
+	unsigned long flags;
+
+	if (!hba)
+		return 0;
+
+	dev_dbg(hba->dev, "%s:clk scaling %d\n", __func__,
+			(int)allowed);
+	spin_lock_irqsave(hba->host->host_lock, flags);
+	if (hba->clk_gating.is_suspended ||
+			hba->is_sys_suspended || hba->ufshcd_state == UFSHCD_STATE_ERROR
+			|| hba->ufshcd_state == UFSHCD_STATE_RESET) {
+		spin_unlock_irqrestore(hba->host->host_lock, flags);
+		dev_info(hba->dev, "%s: forbid to set clk scaling %d %d %d\n",
+					__func__, hba->clk_gating.is_suspended,
+					hba->is_sys_suspended, hba->ufshcd_state);
+		return 0;
+	}
+	spin_unlock_irqrestore(hba->host->host_lock, flags);
+
+	mutex_lock(&ufshcd_clkscale_lock);
+	if (hba->clk_scaling.is_allowed == allowed)
+		goto out;
+
+	pm_runtime_get_sync(hba->dev);
+	ufshcd_hold(hba, false);
+
+	cancel_work_sync(&hba->clk_scaling.suspend_work);
+	cancel_work_sync(&hba->clk_scaling.resume_work);
+
+	hba->clk_scaling.is_allowed = allowed;
+
+	if (val) {
+		ufshcd_resume_clkscaling(hba);
+	} else {
+		ufshcd_suspend_clkscaling(hba);
+		err = ufshcd_devfreq_scale(hba, true);
+		if (err)
+			dev_err(hba->dev, "%s: failed to scale clocks up %d\n",
+					__func__, err);
+	}
+
+	ufshcd_release(hba, false);
+	pm_runtime_put_sync(hba->dev);
+out:
+	mutex_unlock(&ufshcd_clkscale_lock);
+	return 0;
+}
+EXPORT_SYMBOL(ufshcd_clk_scaling_enable);
+#endif
 
 static void ufshcd_clkscaling_init_sysfs(struct ufs_hba *hba)
 {
@@ -4051,7 +4130,10 @@ static int ufshcd_exec_dev_cmd(struct ufs_hba *hba,
 {
 	struct ufshcd_lrb *lrbp;
 	int err;
-	int tag;
+#ifdef VENDOR_EDIT
+//Tong.Han@Bsp.Group.Tp,2018-6-4,Added for Dealth_healer
+	int tag = 0;
+#endif
 	struct completion wait;
 	unsigned long flags;
 	bool has_read_lock = false;
@@ -6444,6 +6526,16 @@ static void __ufshcd_transfer_req_compl(struct ufs_hba *hba,
 					blk_update_latency_hist(&hba->io_lat_s,
 						(rq_data_dir(req) == READ),
 						delta_us);
+#ifdef VENDOR_EDIT
+//yh@BSP.Storage.UFS, 2019-02-19 add for ufs io latency info calculate
+					if (bio_has_data(req->bio) && (delta_us > 5000))
+					{
+						trace_printk("ufs_io_latency:%06lld us, io_type:%s, LBA:%08x, size:%d\n",
+								delta_us, (rq_data_dir(req) == READ) ? "R" : "W",
+								req->bio->bi_iter.bi_sector,
+								cpu_to_be32(cmd->sdb.length));
+					}
+#endif
 				}
 			}
 
@@ -7547,7 +7639,10 @@ static int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 	struct utp_upiu_task_req *task_req_upiup;
 	struct Scsi_Host *host;
 	unsigned long flags;
-	int free_slot;
+#ifdef VENDOR_EDIT
+//Tong.Han@Bsp.Group.Tp,2018-6-4,Added for Dealth_healer
+	int free_slot = 0;
+#endif
 	int err;
 	int task_tag;
 
@@ -8235,6 +8330,12 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 	struct scsi_device *sdev_boot = NULL;
 	bool is_bootable_dev = false;
 	bool is_embedded_dev = false;
+#ifdef VENDOR_EDIT
+//yh@PSW.BSP.Storage.UFS, 2018-05-31 add for ufs device in /proc/devinfo
+	static char temp_version[5] = {0};
+	static char vendor[9] = {0};
+	static char model[17] = {0};
+#endif
 
 	if ((hba->dev_info.b_device_sub_class == UFS_DEV_EMBEDDED_BOOTABLE) ||
 	    (hba->dev_info.b_device_sub_class == UFS_DEV_REMOVABLE_BOOTABLE))
@@ -8254,6 +8355,21 @@ static int ufshcd_scsi_add_wlus(struct ufs_hba *hba)
 		goto out;
 	}
 	scsi_device_put(hba->sdev_ufs_device);
+
+#ifdef VENDOR_EDIT
+//yh@PSW.BSP.Storage.UFS, 2018-05-31 add for ufs device in /proc/devinfo
+	strncpy(temp_version, hba->sdev_ufs_device->rev, 4);
+	strncpy(vendor, hba->sdev_ufs_device->vendor, 8);
+	strncpy(model, hba->sdev_ufs_device->model, 16);
+	ret = register_device_proc("ufs_version", temp_version, vendor);
+	if (ret) {
+		printk("Fail register_device_proc ufs_version\n");
+	}
+	ret = register_device_proc("ufs", model, vendor);
+	if (ret) {
+		printk("Fail register_device_proc ufs \n");
+	}
+#endif
 
 	if (is_bootable_dev) {
 		sdev_boot = __scsi_add_device(hba->host, 0, 0,
@@ -10484,6 +10600,10 @@ out:
 		hba->curr_dev_pwr_mode, hba->uic_link_state);
 	if (!ret)
 		hba->is_sys_suspended = true;
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus. 2018.09.13. add for ufs debug
+	dev_info(hba->dev, "%s:suspend done\n", __func__);
+#endif /* VENDOR_EDIT */
 	return ret;
 }
 EXPORT_SYMBOL(ufshcd_system_suspend);
@@ -10517,6 +10637,10 @@ out:
 		hba->curr_dev_pwr_mode, hba->uic_link_state);
 	if (!ret)
 		hba->is_sys_suspended = false;
+#ifdef VENDOR_EDIT
+//cuixiaogang@SRC.hypnus. 2018.09.13. add for ufs debug
+	dev_info(hba->dev, "%s:resume done\n", __func__);
+#endif /* VENDOR_EDIT */
 	return ret;
 }
 EXPORT_SYMBOL(ufshcd_system_resume);
@@ -10768,6 +10892,7 @@ static void ufshcd_add_spm_lvl_sysfs_nodes(struct ufs_hba *hba)
 		dev_err(hba->dev, "Failed to create sysfs for spm_lvl\n");
 }
 
+#ifndef VENDOR_EDIT
 static ssize_t ufs_sysfs_read_desc_param(struct ufs_hba *hba,
 				  enum desc_idn desc_id,
 				  u8 desc_index,
@@ -10860,19 +10985,24 @@ static void ufshcd_remove_desc_sysfs_nodes(struct device *dev)
 {
 	sysfs_remove_groups(&dev->kobj, ufs_sysfs_groups);
 }
+#endif
 
 static inline void ufshcd_add_sysfs_nodes(struct ufs_hba *hba)
 {
 	ufshcd_add_rpm_lvl_sysfs_nodes(hba);
 	ufshcd_add_spm_lvl_sysfs_nodes(hba);
+#ifndef VENDOR_EDIT
 	ufshcd_add_desc_sysfs_nodes(hba->dev);
+#endif
 }
 
 static inline void ufshcd_remove_sysfs_nodes(struct ufs_hba *hba)
 {
 	device_remove_file(hba->dev, &hba->rpm_lvl_attr);
 	device_remove_file(hba->dev, &hba->spm_lvl_attr);
+#ifndef VENDOR_EDIT
 	ufshcd_remove_desc_sysfs_nodes(hba->dev);
+#endif
 }
 
 static void __ufshcd_shutdown_clkscaling(struct ufs_hba *hba)
@@ -11099,6 +11229,102 @@ out_error:
 }
 EXPORT_SYMBOL(ufshcd_alloc_host);
 
+#ifdef VENDOR_EDIT
+//xiaofan.yang@PSW.TECH.Stability, 2019/03/15,Add for check storage endurance
+#include <asm/unaligned.h>
+static ssize_t ufs_sysfs_read_desc_param(struct ufs_hba *hba,
+				  enum desc_idn desc_id,
+				  u8 desc_index,
+				  u8 param_offset,
+				  u8 *sysfs_buf,
+				  u8 param_size)
+{
+	u8 desc_buf[8] = {0};
+	int ret;
+
+	if (param_size > 8)
+		return -EINVAL;
+
+	ret = ufshcd_read_desc_param(hba, desc_id, desc_index,
+				param_offset, desc_buf, param_size);
+	if (ret)
+		return -EINVAL;
+	switch (param_size) {
+	case 1:
+		ret = sprintf(sysfs_buf, "0x%02X\n", *desc_buf);
+		break;
+	case 2:
+		ret = sprintf(sysfs_buf, "0x%04X\n",
+			get_unaligned_be16(desc_buf));
+		break;
+	case 4:
+		ret = sprintf(sysfs_buf, "0x%08X\n",
+			get_unaligned_be32(desc_buf));
+		break;
+	case 8:
+		ret = sprintf(sysfs_buf, "0x%016llX\n",
+			get_unaligned_be64(desc_buf));
+		break;
+	}
+
+	return ret;
+}
+
+#define UFS_DESC_PARAM(_name, _puname, _duname, _size)			\
+	static ssize_t _name##_show(struct device *dev, 			\
+		struct device_attribute *attr, char *buf)			\
+	{									\
+		struct ufs_hba *hba = dev_get_drvdata(dev); 		\
+		return ufs_sysfs_read_desc_param(hba, QUERY_DESC_IDN_##_duname, \
+			0, _duname##_DESC_PARAM##_puname, buf, _size);		\
+	}									\
+	static DEVICE_ATTR_RO(_name)
+
+#define UFS_HEALTH_DESC_PARAM(_name, _uname, _size)			\
+	UFS_DESC_PARAM(_name, _uname, HEALTH, _size)
+
+UFS_HEALTH_DESC_PARAM(len, _LEN, 1);
+UFS_HEALTH_DESC_PARAM(eol_info, _EOL_INFO, 1);
+UFS_HEALTH_DESC_PARAM(life_time_estimation_a, _LIFE_TIME_EST_A, 1);
+UFS_HEALTH_DESC_PARAM(life_time_estimation_b, _LIFE_TIME_EST_B, 1);
+
+static struct attribute *ufs_sysfs_health_descriptor[] = {
+	&dev_attr_len.attr,
+	&dev_attr_eol_info.attr,
+	&dev_attr_life_time_estimation_a.attr,
+	&dev_attr_life_time_estimation_b.attr,
+	NULL,
+};
+
+static const struct attribute_group ufs_sysfs_health_descriptor_group = {
+	.name = "health_descriptor",
+	.attrs = ufs_sysfs_health_descriptor,
+};
+
+#define UFS_POWER_DESC_PARAM(_name, _uname, _index)			\
+static ssize_t _name##_index##_show(struct device *dev,			\
+	struct device_attribute *attr, char *buf)			\
+{									\
+	struct ufs_hba *hba = dev_get_drvdata(dev);			\
+	return ufs_sysfs_read_desc_param(hba, QUERY_DESC_IDN_POWER, 0,	\
+		PWR_DESC##_uname##_0 + _index * 2, buf, 2);		\
+}									\
+static DEVICE_ATTR_RO(_name##_index)
+
+static const struct attribute_group *ufs_sysfs_groups[] = {
+	&ufs_sysfs_health_descriptor_group,
+	NULL,
+};
+
+void ufs_sysfs_add_nodes(struct device *dev)
+{
+	int ret;
+
+	ret = sysfs_create_groups(&dev->kobj, ufs_sysfs_groups);
+	if (ret)
+		dev_err(dev,"%s: sysfs groups creation failed (err = %d)\n", __func__, ret);
+}
+#endif
 /**
  * ufshcd_init - Driver initialization routine
  * @hba: per-adapter instance
@@ -11308,7 +11534,10 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	ufsdbg_add_debugfs(hba);
 
 	ufshcd_add_sysfs_nodes(hba);
-
+#ifdef VENDOR_EDIT
+    //xiaofan.yang@PSW.TECH.Stability, 2019/03/15,Add for check storage endurance
+	ufs_sysfs_add_nodes(hba->dev);
+#endif
 	return 0;
 
 out_remove_scsi_host:
