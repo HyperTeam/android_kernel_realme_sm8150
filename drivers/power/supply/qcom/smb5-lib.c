@@ -29,10 +29,71 @@
 #include "storm-watch.h"
 #include "schgm-flash.h"
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/22, sjc Add for charging */
+//#include <linux/gpio.h>
+//#include <linux/of_gpio.h>
+//#include <linux/rtc.h>
+//#include <linux/proc_fs.h>
+//#include <linux/iio/consumer.h>
+//#include <linux/kthread.h>
+
+//#include <soc/oppo/boot_mode.h>
+//#include <soc/oppo/device_info.h>
+//#include <soc/oppo/oppo_project.h>
+#include <linux/iio/consumer.h>
+
+#include "../../oppo/oppo_charger.h"
+#include "../../oppo/oppo_gauge.h"
+#include "../../oppo/oppo_vooc.h"
+#include "../../oppo/oppo_short.h"
+#include "../../oppo/charger_ic/oppo_short_ic.h"
+
+#include "../../oppo/oppo_adapter.h"
+#include "../../oppo/charger_ic/oppo_bq25882.h"
+#include "../../oppo/gauge_ic/oppo_bq27541.h"
+
+extern bool oppo_ccdetect_check_is_gpio(struct oppo_chg_chip *chip);
+extern int oppo_ccdetect_gpio_init(struct oppo_chg_chip *chip);
+extern void oppo_ccdetect_irq_init(struct oppo_chg_chip *chip);
+extern void oppo_ccdetect_enable(void);
+extern int qpnp_get_prop_charger_voltage_now(void);
+extern int oppo_ccdetect_support_check(void);
+
+extern void oppo_ccdetect_disable(void);
+extern bool oppo_get_otg_switch_status(void);
+extern int oppo_ccdetect_get_power_role(void);
+extern void oppo_wake_up_usbtemp_thread(void);
+extern bool oppo_usbtemp_check_is_support(void);
+extern void oppo_force_to_fulldump(bool force);
+#define OPPO_CHG_MONITOR_INTERVAL round_jiffies_relative(msecs_to_jiffies(5000))
+#ifdef VENDOR_EDIT
+/* Cong.Dai@BSP.TP.Init, 2018/04/08, Add for notify touchpanel status */
+void __attribute__((weak)) switch_usb_state(int usb_state) {return;}
+#endif
+
+#endif
+
 #define smblib_err(chg, fmt, ...)		\
 	pr_err("%s: %s: " fmt, chg->name,	\
 		__func__, ##__VA_ARGS__)	\
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/03/15, sjc Add for OTG debug */
+
+struct oppo_chg_chip *g_oppo_chip = NULL;
+
+
+#define smblib_dbg(chg, reason, fmt, ...)			\
+	do {							\
+		if (*chg->debug_mask & (reason))		\
+			pr_err("%s: %s: " fmt, chg->name,	\
+				__func__, ##__VA_ARGS__);	\
+		else						\
+			pr_debug("%s: %s: " fmt, chg->name,	\
+				__func__, ##__VA_ARGS__);	\
+	} while (0)
+#else
 #define smblib_dbg(chg, reason, fmt, ...)			\
 	do {							\
 		if (*chg->debug_mask & (reason))		\
@@ -42,6 +103,7 @@
 			pr_debug("%s: %s: " fmt, chg->name,	\
 				__func__, ##__VA_ARGS__);	\
 	} while (0)
+#endif
 
 #define typec_rp_med_high(chg, typec_mode)			\
 	((typec_mode == POWER_SUPPLY_TYPEC_SOURCE_MEDIUM	\
@@ -521,7 +583,12 @@ static const struct apsd_result smblib_apsd_results[] = {
 	[FLOAT] = {
 		.name	= "FLOAT",
 		.bit	= FLOAT_CHARGER_BIT,
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/13, sjc Modifyfor charging */
 		.pst	= POWER_SUPPLY_TYPE_USB_FLOAT
+#else
+		.pst	= POWER_SUPPLY_TYPE_USB_DCP
+#endif
 	},
 	[HVDCP2] = {
 		.name	= "HVDCP2",
@@ -566,8 +633,14 @@ static const struct apsd_result *smblib_get_apsd_result(struct smb_charger *chg)
 
 	if (apsd_stat & QC_CHARGER_BIT) {
 		/* since its a qc_charger, either return HVDCP3 or HVDCP2 */
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/25, sjc Modify for charging */
 		if (result != &smblib_apsd_results[HVDCP3])
 			result = &smblib_apsd_results[HVDCP2];
+#else
+		if (result != &smblib_apsd_results[HVDCP3] && result->bit == (DCP_CHARGER_BIT | QC_2P0_BIT))
+			result = &smblib_apsd_results[HVDCP2];
+#endif
 	}
 
 	return result;
@@ -1015,20 +1088,83 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 	/* if PD is active, APSD is disabled so won't have a valid result */
 	if (chg->pd_active) {
 		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_PD;
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/19, sjc Add for charging */
+		printk(KERN_ERR "!!!smblib_update_usb_type: APSD=%s PD=%d\n", apsd_result->name, chg->pd_active);
+#endif
+	} else if (chg->qc3p5_detected) {
+		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_HVDCP_3P5;
 	} else {
 		/*
 		 * Update real charger type only if its not FLOAT
 		 * detected as as SDP
 		 */
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/03/28, sjc Modify for charging */
 		if (!(apsd_result->pst == POWER_SUPPLY_TYPE_USB_FLOAT &&
 			chg->real_charger_type == POWER_SUPPLY_TYPE_USB))
+		chg->real_charger_type = apsd_result->pst;
+#else
+		if (!(apsd_result->pst == POWER_SUPPLY_TYPE_USB_FLOAT &&
+				chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) {
 			chg->real_charger_type = apsd_result->pst;
+			//chg->usb_psy_desc.type = apsd_result->pst;
+		}
+#endif
 	}
 
 	smblib_dbg(chg, PR_MISC, "APSD=%s PD=%d\n",
 					apsd_result->name, chg->pd_active);
 	return apsd_result;
 }
+
+#ifdef  VENDOR_EDIT
+
+int opchg_get_charger_type(void)
+{
+	u8 apsd_stat;
+	int rc;
+	struct smb_charger *chg = NULL;
+	struct oppo_chg_chip *chip = g_oppo_chip;
+	
+	if (!chip)
+		return POWER_SUPPLY_TYPE_UNKNOWN;
+
+	chg = &chip->pmic_spmi.smb5_chip->chg;
+
+	/* reset for fastchg to normal */
+	if (chip->charger_type == POWER_SUPPLY_TYPE_UNKNOWN)
+		chg->pre_current_ma = -1;
+
+	rc = smblib_read(chg, APSD_STATUS_REG, &apsd_stat);
+	if (rc < 0) {
+		chg_err("Couldn't read APSD_STATUS rc=%d\n", rc);
+		return POWER_SUPPLY_TYPE_UNKNOWN;
+	}
+	chg_debug("APSD_STATUS = 0x%02x\n", apsd_stat);
+
+	if (!(apsd_stat & APSD_DTC_STATUS_DONE_BIT))
+		return POWER_SUPPLY_TYPE_UNKNOWN;
+
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB
+			|| chg->real_charger_type == POWER_SUPPLY_TYPE_USB_CDP
+			|| chg->real_charger_type == POWER_SUPPLY_TYPE_USB_DCP) {
+		oppo_chg_soc_update();
+	}
+
+	if (POWER_SUPPLY_TYPE_UNKNOWN == chg->real_charger_type) {
+		smblib_update_usb_type(chg);
+		chg_debug("update_usb_type: get_charger_type=%d\n", chg->real_charger_type);
+	}
+
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_CDP)
+		return POWER_SUPPLY_TYPE_USB;
+
+	return chg->real_charger_type;
+}
+
+
+#endif
 
 static int smblib_notifier_call(struct notifier_block *nb,
 		unsigned long ev, void *v)
@@ -1233,6 +1369,10 @@ void smblib_suspend_on_debug_battery(struct smb_charger *chg)
 
 int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 {
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/19, sjc Add for charging */
+	const struct apsd_result *apsd_result;
+#endif
 	union power_supply_propval val;
 	int rc;
 
@@ -1244,6 +1384,16 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 
 	if (!val.intval)
 		return 0;
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/06/19, sjc Add to rerun apsd */
+	apsd_result = smblib_get_apsd_result(chg);
+	if ((apsd_result->pst != POWER_SUPPLY_TYPE_UNKNOWN)
+		&& (apsd_result->pst != POWER_SUPPLY_TYPE_USB)
+		&& (apsd_result->pst != POWER_SUPPLY_TYPE_USB_CDP))
+		/* if type is not usb or unknown no need to rerun apsd */
+		return 0;
+#endif
 
 	rc = smblib_request_dpdm(chg, true);
 	if (rc < 0)
@@ -1294,6 +1444,13 @@ static int set_sdp_current(struct smb_charger *chg, int icl_ua)
 	default:
 		return -EINVAL;
 	}
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/20, sjc Add for charging */
+	if (icl_ua <= USBIN_150MA)
+		icl_options = 0;
+	else
+		icl_options = USB51_MODE_BIT;
+#endif
 
 	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB &&
 		apsd_result->pst == POWER_SUPPLY_TYPE_USB_FLOAT) {
@@ -1365,6 +1522,12 @@ int smblib_set_icl_current(struct smb_charger *chg, int icl_ua)
 			if (rc >= 0)
 				goto unsuspend;
 		}
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/07/13, sjc Modify for fake typec */
+		set_sdp_current(chg, 500000);
+#else
+		set_sdp_current(chg, 100000);
+#endif
 
 		rc = smblib_set_charge_param(chg, &chg->param.usb_icl, icl_ua);
 		if (rc < 0) {
@@ -1772,10 +1935,24 @@ int smblib_vbus_regulator_enable(struct regulator_dev *rdev)
 {
 	struct smb_charger *chg = rdev_get_drvdata(rdev);
 	int rc;
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+	struct oppo_chg_chip *chip = g_oppo_chip;
+#endif/*VENDOR_EDIT*/
 
 	smblib_dbg(chg, PR_OTG, "enabling OTG\n");
 
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+	if(chip->vbatt_num == 2)
+	{
+		rc = chip->chg_ops->otg_enable();
+	}
+	else
+	{
+    	rc = smblib_masked_write(chg, DCDC_CMD_OTG_REG, OTG_EN_BIT, OTG_EN_BIT);
+	}
+#else/*VENDOR_EDIT*/
 	rc = smblib_masked_write(chg, DCDC_CMD_OTG_REG, OTG_EN_BIT, OTG_EN_BIT);
+#endif/*VENDOR_EDIT*/
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't enable OTG rc=%d\n", rc);
 		return rc;
@@ -1788,10 +1965,24 @@ int smblib_vbus_regulator_disable(struct regulator_dev *rdev)
 {
 	struct smb_charger *chg = rdev_get_drvdata(rdev);
 	int rc;
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+    struct oppo_chg_chip *chip = g_oppo_chip;
+#endif/*VENDOR_EDIT*/
 
 	smblib_dbg(chg, PR_OTG, "disabling OTG\n");
 
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+	if(chip->vbatt_num == 2)
+	{
+		rc = chip->chg_ops->otg_disable();
+	}
+	else
+	{
+    	rc = smblib_masked_write(chg, DCDC_CMD_OTG_REG, OTG_EN_BIT, 0);
+	}
+#else/*VENDOR_EDIT*/
 	rc = smblib_masked_write(chg, DCDC_CMD_OTG_REG, OTG_EN_BIT, 0);
+#endif/*VENDOR_EDIT*/
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't disable OTG regulator rc=%d\n", rc);
 		return rc;
@@ -3103,6 +3294,11 @@ int smblib_get_prop_usb_present(struct smb_charger *chg,
 	return 0;
 }
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/04/05, sjc Add for charging */
+/*  when set USBIN_SUSPEND_BIT, use present instead of online */
+static bool usb_online_status = false;
+#endif
 int smblib_get_prop_usb_online(struct smb_charger *chg,
 			       union power_supply_propval *val)
 {
@@ -3113,10 +3309,27 @@ int smblib_get_prop_usb_online(struct smb_charger *chg,
 		val->intval = false;
 		return rc;
 	}
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/04/05, sjc Add for charging */
+	if (usb_online_status == true) {
+		rc = smblib_read(chg, USBIN_BASE + INT_RT_STS_OFFSET, &stat);
+		if (rc < 0) {
+			smblib_err(chg, "usb_online_status: Couldn't read USBIN_RT_STS rc=%d\n", rc);
+			return rc;
+		}
+
+		val->intval = (bool)(stat & USBIN_PLUGIN_RT_STS_BIT);
+		return rc;
+	}
+#endif /*VENDOR_EDIT*/
 
 	if (is_client_vote_enabled_locked(chg->usb_icl_votable,
 					CHG_TERMINATION_VOTER)) {
 		rc = smblib_get_prop_usb_present(chg, val);
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/04/04, sjc Add for debug */
+		printk(KERN_ERR "smblib_get_prop_usb_online false\n");
+#endif
 		return rc;
 	}
 
@@ -5092,6 +5305,18 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 		if (chg->fcc_stepper_enable)
 			vote(chg->fcc_votable, FCC_STEPPER_VOTER, false, 0);
 	} else {
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/22, sjc Add for charging */
+		oppo_vooc_reset_fastchg_after_usbout();
+		if (oppo_vooc_get_fastchg_started() == false && g_oppo_chip) {
+			smbchg_set_chargerid_switch_val(0);
+			g_oppo_chip->chargerid_volt = 0;
+			g_oppo_chip->chargerid_volt_got = false;
+			g_oppo_chip->charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+			oppo_chg_wake_update_work();
+		}
+		chg->pre_current_ma = -1;
+#endif
 		if (chg->wa_flags & BOOST_BACK_WA) {
 			data = chg->irq_info[SWITCHER_POWER_OK_IRQ].irq_data;
 			if (data) {
@@ -5110,6 +5335,34 @@ void smblib_usb_plugin_hard_reset_locked(struct smb_charger *chg)
 			vote(chg->fcc_votable, FCC_STEPPER_VOTER,
 							true, 1500000);
 	}
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/03/25, sjc Add for charging */
+	if (vbus_rising) {
+		cancel_delayed_work_sync(&chg->chg_monitor_work);
+		schedule_delayed_work(&chg->chg_monitor_work, OPPO_CHG_MONITOR_INTERVAL);
+		oppo_force_to_fulldump(true);
+	} else {
+		cancel_delayed_work_sync(&chg->chg_monitor_work);
+	}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/07/13, sjc Add for fake typec */
+	if (chg->fake_typec_insertion == true && !vbus_rising) {
+		printk(KERN_ERR "!!! %s: fake typec unplug\n", __func__);
+		chg->fake_typec_insertion = false;
+		chg->typec_mode = POWER_SUPPLY_TYPEC_NONE;
+	}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Cong.Dai@BSP.TP.Init, 2018/04/08, Add for notify touchpanel status */
+	if (vbus_rising) {
+		switch_usb_state(1);
+	} else {
+		switch_usb_state(0);
+	}
+#endif
 
 	power_supply_changed(chg->usb_psy);
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: usbin-plugin %s\n",
@@ -5135,6 +5388,11 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 	smblib_set_opt_switcher_freq(chg, vbus_rising ? chg->chg_freq.freq_5V :
 						chg->chg_freq.freq_removal);
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2016/12/20, sjc Add for charging */
+	printk(KERN_ERR "!!!!! smblib_usb_plugin_locked: [%d]\n", vbus_rising);
+#endif
+
 	if (vbus_rising) {
 		cancel_delayed_work_sync(&chg->pr_swap_detach_work);
 		vote(chg->awake_votable, DETACH_DETECT_VOTER, false, 0);
@@ -5152,6 +5410,11 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		if (chg->fcc_stepper_enable)
 			vote(chg->fcc_votable, FCC_STEPPER_VOTER, false, 0);
 
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/13, sjc Add for charging */
+		schedule_delayed_work(&chg->typec_disable_cmd_work, msecs_to_jiffies(500));
+#endif
 		/* Schedule work to enable parallel charger */
 		vote(chg->awake_votable, PL_DELAY_VOTER, true, 0);
 		schedule_delayed_work(&chg->pl_enable_work,
@@ -5162,6 +5425,22 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 		if (rc < 0)
 			smblib_err(chg, "Couldn't stop SW thermal regulation WA, rc=%d\n",
 				rc);
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/22, sjc Add for charging */
+		oppo_vooc_reset_fastchg_after_usbout();
+		if (oppo_vooc_get_fastchg_started() == false && g_oppo_chip) {
+			smbchg_set_chargerid_switch_val(0);
+			g_oppo_chip->chargerid_volt = 0;
+			g_oppo_chip->chargerid_volt_got = false;
+			g_oppo_chip->charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+			oppo_chg_wake_update_work();
+		}
+		chg->pre_current_ma = -1;
+#endif
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/24, sjc Add to rerun apsd */
+		chg->uusb_apsd_rerun_done = false;
+#endif
 
 		if (chg->wa_flags & BOOST_BACK_WA) {
 			data = chg->irq_info[SWITCHER_POWER_OK_IRQ].irq_data;
@@ -5221,6 +5500,35 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 	vote(chg->temp_change_irq_disable_votable, DEFAULT_VOTER,
 						!vbus_rising, 0);
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/03/25, sjc Add for charging */
+	if (vbus_rising) {
+		cancel_delayed_work_sync(&chg->chg_monitor_work);
+		schedule_delayed_work(&chg->chg_monitor_work, OPPO_CHG_MONITOR_INTERVAL);
+		oppo_force_to_fulldump(true);
+	} else {
+		cancel_delayed_work_sync(&chg->chg_monitor_work);
+	}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/07/13, sjc Add for fake typec */
+	if (chg->fake_typec_insertion == true && !vbus_rising) {
+		printk(KERN_ERR "!!! %s: fake typec unplug\n", __func__);
+		chg->fake_typec_insertion = false;
+		chg->typec_mode = POWER_SUPPLY_TYPEC_NONE;
+	}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Cong.Dai@BSP.TP.Init, 2018/04/08, Add for notify touchpanel status */
+	if (vbus_rising) {
+		switch_usb_state(1);
+	} else {
+		switch_usb_state(0);
+	}
+#endif
+
 	power_supply_changed(chg->usb_psy);
 	if (chg->dual_role)
 		dual_role_instance_changed(chg->dual_role);
@@ -5232,7 +5540,14 @@ irqreturn_t usb_plugin_irq_handler(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
 	struct smb_charger *chg = irq_data->parent_data;
-
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG	
+	struct oppo_chg_chip *chip = g_oppo_chip;
+		if (chg->typec_mode == POWER_SUPPLY_TYPEC_SINK
+			&& chip->vbatt_num == 2 ) {
+			pr_info("%s:chg->typec_mode = sink return!\n", __func__);
+			return IRQ_HANDLED;
+		}
+#endif/*VENDOR_EDIT*/
 	if (chg->pd_hard_reset)
 		smblib_usb_plugin_hard_reset_locked(chg);
 	else
@@ -5426,7 +5741,10 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 	default:
 		break;
 	}
-
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/25, sjc Add for charging */
+	printk(KERN_ERR "!!!IRQ: apsd-done rising; %s detected\n", apsd_result->name);
+#endif
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: apsd-done rising; %s detected\n",
 		   apsd_result->name);
 }
@@ -5437,7 +5755,19 @@ irqreturn_t usb_source_change_irq_handler(int irq, void *data)
 	struct smb_charger *chg = irq_data->parent_data;
 	int rc = 0;
 	u8 stat;
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/06/19, sjc Add to rerun apsd */
+	u8 reg_value = 0;
+#endif
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+	struct oppo_chg_chip *chip = g_oppo_chip;
 
+	if (chg->typec_mode == POWER_SUPPLY_TYPEC_SINK
+		&& chip->vbatt_num == 2 ) {
+		pr_info("%s:chg->typec_mode = sink return!\n", __func__);
+		return IRQ_HANDLED;
+	}
+#endif/*VENDOR_EDIT*/
 	/* PD session is ongoing, ignore BC1.2 and QC detection */
 	if (chg->pd_active)
 		return IRQ_HANDLED;
@@ -5449,20 +5779,41 @@ irqreturn_t usb_source_change_irq_handler(int irq, void *data)
 	}
 	smblib_dbg(chg, PR_INTERRUPT, "APSD_STATUS = 0x%02x\n", stat);
 
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/24, sjc Modify to rerun apsd */
 	if ((chg->connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB)
-		&& (stat & APSD_DTC_STATUS_DONE_BIT)
-		&& !chg->uusb_apsd_rerun_done) {
+			&& (stat & APSD_DTC_STATUS_DONE_BIT)
+			&& !chg->uusb_apsd_rerun_done) {
+#else
+	if ((stat & APSD_DTC_STATUS_DONE_BIT) && !chg->uusb_apsd_rerun_done) {
+#endif
 		/*
 		 * Force re-run APSD to handle slow insertion related
 		 * charger-mis-detection.
 		 */
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/06/19, sjc Modify to rerun apsd */
 		chg->uusb_apsd_rerun_done = true;
 		smblib_rerun_apsd_if_required(chg);
 		return IRQ_HANDLED;
+#else
+		smblib_read(chg, APSD_RESULT_STATUS_REG, &reg_value);
+		if (reg_value & (CDP_CHARGER_BIT /*| SDP_CHARGER_BIT*/)) {
+			chg->uusb_apsd_rerun_done = true;
+			smblib_rerun_apsd(chg);
+			return IRQ_HANDLED;
+		}
+#endif
 	}
 
 	smblib_handle_apsd_done(chg,
 		(bool)(stat & APSD_DTC_STATUS_DONE_BIT));
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/01/25, sjc Add for charging */
+	if ((bool)(stat & APSD_DTC_STATUS_DONE_BIT))
+		oppo_chg_wake_update_work();
+#endif
 
 	smblib_handle_hvdcp_detect_done(chg,
 		(bool)(stat & QC_CHARGER_BIT));
@@ -5904,19 +6255,53 @@ irqreturn_t typec_state_change_irq_handler(int irq, void *data)
 	struct smb_irq_data *irq_data = data;
 	struct smb_charger *chg = irq_data->parent_data;
 	int typec_mode;
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/23, sjc Add for charging */
+	bool current_status = 0;
+	static bool dfp_status = 0;
+	struct oppo_chg_chip *chip = g_oppo_chip;
+#endif
 
 	if (chg->connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB) {
 		smblib_dbg(chg, PR_INTERRUPT,
 				"Ignoring for micro USB\n");
 		return IRQ_HANDLED;
 	}
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/13, sjc Add for charging */
+	cancel_delayed_work(&chg->typec_disable_cmd_work);
+#endif
 
 	typec_mode = smblib_get_prop_typec_mode(chg);
 	if (chg->sink_src_mode != UNATTACHED_MODE
 			&& (typec_mode != chg->typec_mode))
 		smblib_handle_rp_change(chg, typec_mode);
 	chg->typec_mode = typec_mode;
+#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/06/02 for SVOOC OTG
+	if (chg->typec_mode == POWER_SUPPLY_TYPEC_SINK
+		&& chip->vbatt_num == 2 ) {
+		pr_info("%s: chg->typec_mode = SINK,Disable APSD!\n", __func__);
+		//vote(chg->apsd_disable_votable, SVOOC_OTG_VOTER, true, 0);
+	}
+#endif/*VENDOR_EDIT*/
 
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/23, sjc Add for charging */
+	current_status = (chg->typec_mode >= POWER_SUPPLY_TYPEC_SINK
+			&& chg->typec_mode <= POWER_SUPPLY_TYPEC_POWERED_CABLE_ONLY);
+	if (dfp_status ^ current_status) {
+		dfp_status = current_status;
+		printk(KERN_ERR "!!!!! smblib_handle_typec_cc_state_change: [%d], mode[%d]\n", dfp_status, chg->typec_mode);
+	}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/30, sjc Add for using gpio as CC detect */
+	if (chg->typec_present == false && gpio_get_value(chg->ccdetect_gpio) == 1)
+		if (oppo_ccdetect_get_power_role() != POWER_SUPPLY_TYPEC_PR_SINK
+				&& oppo_get_otg_switch_status() == false)
+			oppo_ccdetect_disable();
+#endif
 	smblib_dbg(chg, PR_INTERRUPT, "IRQ: cc-state-change; Type-C %s detected\n",
 				smblib_typec_mode_name[chg->typec_mode]);
 
@@ -6284,7 +6669,10 @@ irqreturn_t dc_plugin_irq_handler(int irq, void *data)
 
 		chg->last_wls_vout = 0;
 	}
-
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/05/09, sjc Add for charging */
+	if (chg->dc_psy)
+#endif
 	power_supply_changed(chg->dc_psy);
 
 	smblib_dbg(chg, (PR_WLS | PR_INTERRUPT), "dcin_present= %d, usbin_present= %d, cp_reason = %d\n",
@@ -6327,7 +6715,10 @@ irqreturn_t switcher_power_ok_irq_handler(int irq, void *data)
 {
 	struct smb_irq_data *irq_data = data;
 	struct smb_charger *chg = irq_data->parent_data;
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/19, sjc Delete for charging */
 	struct storm_watch *wdata = &irq_data->storm_data;
+#endif
 	int rc, usb_icl;
 	u8 stat;
 
@@ -6349,6 +6740,8 @@ irqreturn_t switcher_power_ok_irq_handler(int irq, void *data)
 		return IRQ_HANDLED;
 
 	if (is_storming(&irq_data->storm_data)) {
+#ifndef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/19, sjc Modiy for charging */
 		/* This could be a weak charger reduce ICL */
 		if (!is_client_vote_enabled(chg->usb_icl_votable,
 						WEAK_CHARGER_VOTER)) {
@@ -6375,6 +6768,13 @@ irqreturn_t switcher_power_ok_irq_handler(int irq, void *data)
 			schedule_delayed_work(&chg->bb_removal_work,
 				msecs_to_jiffies(BOOST_BACK_UNVOTE_DELAY_MS));
 		}
+#else
+		if (printk_ratelimit())
+			smblib_err(chg, "Reverse boost detected: voting 0mA to suspend input\n");
+		if (chg->real_charger_type != POWER_SUPPLY_TYPE_USB_CDP
+				&& chg->real_charger_type != POWER_SUPPLY_TYPE_USB)
+			vote(chg->usb_icl_votable, BOOST_BACK_VOTER, true, 0);
+#endif /* VENDOR_EDIT */
 	}
 
 	return IRQ_HANDLED;
@@ -6617,7 +7017,29 @@ static void smblib_pr_swap_detach_work(struct work_struct *work)
 out:
 	vote(chg->awake_votable, DETACH_DETECT_VOTER, false, 0);
 }
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/30, sjc Add for using gpio as CC detect */
+static void oppo_ccdetect_work(struct work_struct *work)
+{
+	struct smb_charger *chg = container_of(work, struct smb_charger,
+						ccdetect_work.work);
+	int level;
 
+	level = gpio_get_value(chg->ccdetect_gpio);
+	if (level != 1) {
+		oppo_ccdetect_enable();
+        oppo_wake_up_usbtemp_thread();
+//		if (oppo_usbtemp_check_is_support() == true)
+	//		wake_up_interruptible(&oppo_usbtemp_wq);
+	} else {
+		if (oppo_ccdetect_get_power_role() != POWER_SUPPLY_TYPEC_PR_SINK
+				&& oppo_get_otg_switch_status() == false)
+			oppo_ccdetect_disable();
+	}
+
+	vote(chg->awake_votable, CCDETECT_VOTER, false, 0);
+}
+#endif /* VENDOR_EDIT */
 static void smblib_uusb_otg_work(struct work_struct *work)
 {
 	struct smb_charger *chg = container_of(work, struct smb_charger,
@@ -7353,6 +7775,236 @@ static void smblib_dual_role_check_work(struct work_struct *work)
 	mutex_unlock(&chg->dr_lock);
 	vote(chg->awake_votable, DR_SWAP_VOTER, false, 0);
 }
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/13, sjc Add for charging */
+static void typec_disable_cmd_work(struct work_struct *work)
+{
+#if 0
+	int rc = 0;
+	struct smb_charger *chg = container_of(work, struct smb_charger, typec_disable_cmd_work.work);
+
+	if (smblib_get_prop_typec_mode(chg) != POWER_SUPPLY_TYPEC_NONE) {
+		printk(KERN_ERR "!!! %s: active t-c module\n", __func__);
+		return;
+	}
+
+	rc = smblib_masked_write(chg, TYPE_C_MODE_CFG_REG, TYPEC_DISABLE_CMD_BIT, TYPEC_DISABLE_CMD_BIT);
+	if (rc < 0)
+		smblib_err(chg, "Couldn't write TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG rc=%d\n", rc);
+
+	msleep(100);
+
+	rc = smblib_masked_write(chg, TYPE_C_MODE_CFG_REG, TYPEC_DISABLE_CMD_BIT, 0);
+	if (rc < 0)
+		smblib_err(chg, "Couldn't write TYPE_C_INTRPT_ENB_SOFTWARE_CTRL_REG rc=%d\n", rc);
+
+	printk(KERN_ERR "!!! %s: re-active t-c module\n", __func__);
+
+	msleep(200);
+	if (smblib_get_prop_typec_mode(chg) == POWER_SUPPLY_TYPEC_NONE) {
+		printk(KERN_ERR "!!! %s: fake typec plug\n", __func__);
+		rc = smblib_masked_write(chg, TYPE_C_CFG_REG, APSD_START_ON_CC_BIT, 0);
+		if (rc < 0)
+			smblib_err(chg, "Couldn't enable APSD_START_ON_CC rc=%d\n", rc);
+		msleep(600);
+		chg->fake_typec_insertion = true;
+		chg->typec_mode = POWER_SUPPLY_TYPEC_SOURCE_DEFAULT;
+		power_supply_changed(chg->usb_psy);
+	}
+#endif
+	return;
+}
+#endif
+
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/03/25, sjc Add for charging */
+static int oppo_chg_get_fv_monitor(struct oppo_chg_chip *chip)
+{
+    int default_fv = 0;
+
+    if (!chip)
+        return 0;
+    
+    default_fv = chip->limits.temp_cold_vfloat_mv;
+
+    switch(chip->tbatt_status) {
+        case BATTERY_STATUS__INVALID:
+        case BATTERY_STATUS__REMOVED:
+        case BATTERY_STATUS__LOW_TEMP:
+        case BATTERY_STATUS__HIGH_TEMP:
+            break;
+        case BATTERY_STATUS__COLD_TEMP:
+            default_fv = chip->limits.temp_cold_vfloat_mv;
+            break;
+        case BATTERY_STATUS__LITTLE_COLD_TEMP:
+            default_fv = chip->limits.temp_little_cold_vfloat_mv;
+            break;
+        case BATTERY_STATUS__COOL_TEMP:
+            default_fv = chip->limits.temp_cool_vfloat_mv;
+            break;
+        case BATTERY_STATUS__LITTLE_COOL_TEMP:
+            default_fv = chip->limits.temp_little_cool_vfloat_mv;
+            break;
+        case BATTERY_STATUS__NORMAL:
+            default_fv = chip->limits.temp_normal_vfloat_mv;
+            break;
+        case BATTERY_STATUS__WARM_TEMP:
+            default_fv = chip->limits.temp_warm_vfloat_mv;
+            break;
+        default:
+            break;
+    }
+#ifdef CONFIG_OPPO_SHORT_C_BATT_CHECK
+    if (oppo_short_c_batt_is_prohibit_chg(chip) && default_fv > chip->limits.short_c_bat_vfloat_mv)
+        default_fv = chip->limits.short_c_bat_vfloat_mv;
+#endif
+    return default_fv;
+}
+
+
+static int oppo_chg_get_vbatt_full_vol_sw(struct oppo_chg_chip *chip)
+{
+	int default_fv = 0;
+
+	if (!chip)
+		return 0;
+
+	default_fv = chip->limits.cold_vfloat_sw_limit;
+
+	switch(chip->tbatt_status) {
+		case BATTERY_STATUS__INVALID:
+		case BATTERY_STATUS__REMOVED:
+		case BATTERY_STATUS__LOW_TEMP:
+		case BATTERY_STATUS__HIGH_TEMP:
+			break;
+		case BATTERY_STATUS__COLD_TEMP:
+			default_fv = chip->limits.cold_vfloat_sw_limit;
+			break;
+		case BATTERY_STATUS__LITTLE_COLD_TEMP:
+			default_fv = chip->limits.little_cold_vfloat_sw_limit;
+			break;
+		case BATTERY_STATUS__COOL_TEMP:
+			default_fv = chip->limits.cool_vfloat_sw_limit;
+			break;
+		case BATTERY_STATUS__LITTLE_COOL_TEMP:
+			default_fv = chip->limits.little_cool_vfloat_sw_limit;
+			break;
+		case BATTERY_STATUS__NORMAL:
+			default_fv = chip->limits.normal_vfloat_sw_limit;
+			break;
+		case BATTERY_STATUS__WARM_TEMP:
+			default_fv = chip->limits.warm_vfloat_sw_limit;
+			break;
+		default:
+			break;
+	}
+#ifdef CONFIG_OPPO_SHORT_C_BATT_CHECK
+	if (oppo_short_c_batt_is_prohibit_chg(chip) && default_fv > chip->limits.short_c_bat_vfloat_sw_limit)
+		default_fv = chip->limits.short_c_bat_vfloat_sw_limit;
+#endif
+	return default_fv;
+}
+
+/* When charger voltage is setting to < 4.3V and then resume to 5V, cannot charge, so... */
+static void oppo_chg_monitor_work(struct work_struct *work)
+{
+	struct smb_charger *chg = container_of(work, struct smb_charger,
+							chg_monitor_work.work);
+	struct oppo_chg_chip *chip = g_oppo_chip;
+//	int boot_mode = 0;///get_boot_mode();
+	static int counts = 0;
+	int rechg_vol;
+	int rc;
+	u8 stat;
+
+	if (!chip || !chip->charger_exist || !chip->batt_exist || !chip->mmi_chg) {
+		counts = 0;
+		goto rerun_work;
+	}
+	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB || chg->real_charger_type == POWER_SUPPLY_TYPE_USB_CDP)
+		return;
+	//if (boot_mode == MSM_BOOT_MODE__RF || boot_mode == MSM_BOOT_MODE__WLAN)
+	//	return;
+#ifdef CONFIG_OPPO_SHORT_C_BATT_CHECK
+	if (oppo_short_c_batt_is_disable_rechg(chip)) {
+		counts = 0;
+		goto rerun_work;
+	}
+#endif
+	if (oppo_vooc_get_fastchg_started() == true || chip->charger_volt < 4400) {
+		counts = 0;
+		goto rerun_work;
+	}
+	if (chip->tbatt_status == BATTERY_STATUS__COLD_TEMP)
+		rechg_vol = oppo_chg_get_fv_monitor(chip) - 300;
+	else if (chip->tbatt_status == BATTERY_STATUS__LITTLE_COLD_TEMP)
+		rechg_vol = oppo_chg_get_fv_monitor(chip) - 200;
+	else
+		rechg_vol = oppo_chg_get_fv_monitor(chip) - 100;
+	if ((chip->batt_volt > rechg_vol - 10) && chip->batt_full) {
+		counts = 0;
+		goto rerun_work;
+	} else if (chip->batt_volt > oppo_chg_get_vbatt_full_vol_sw(chip) - 10) {
+		counts = 0;
+		goto rerun_work;
+	}
+
+	if (chip->icharging >= 0) {
+		counts++;
+	} else if (chip->icharging < 0 && (chip->icharging * -1) <= chip->limits.iterm_ma / 2) {
+		counts++;
+	} else {
+		counts = 0;
+	}
+	if (counts > 10)
+		counts = 10;
+
+	if (counts >= (chip->batt_full ? 8 : 3)) {//because rechg counts=6
+		rc = smblib_read(chg, BATTERY_CHARGER_STATUS_8_REG, &stat);
+		if (rc < 0) {
+			printk(KERN_ERR "oppo_chg_monitor_work: Couldn't get BATTERY_CHARGER_STATUS_8_REG status rc=%d\n", rc);
+			goto rerun_work;
+		}
+		if (get_client_vote(chg->usb_icl_votable, BOOST_BACK_VOTER) == 0
+				&& get_effective_result(chg->usb_icl_votable) <= USBIN_25MA) {
+			printk(KERN_ERR "oppo_chg_monitor_work: boost back\n");
+			if (chg->wa_flags & BOOST_BACK_WA)
+				vote(chg->usb_icl_votable, BOOST_BACK_VOTER, false, 0);
+		}
+		if (chip->charging_state == CHARGING_STATUS_FAIL) {//for TEMP > 55 or < -3
+			counts = 0;
+			goto rerun_work;
+		}
+		if (stat & PRE_TERM_BIT) {
+			usb_online_status = true;
+			printk(KERN_ERR "oppo_chg_monitor_work: PRE_TERM_BIT is set[0x%x], clear it\n", stat);
+			rc = smblib_masked_write(chg, USBIN_CMD_IL_REG, USBIN_SUSPEND_BIT, 1);
+			if (rc < 0) {
+				printk(KERN_ERR "oppo_chg_monitor_work: Couldn't set USBIN_SUSPEND_BIT rc=%d\n", rc);
+				goto rerun_work;
+			}
+			msleep(50);
+			rc = smblib_masked_write(chg, USBIN_CMD_IL_REG, USBIN_SUSPEND_BIT, 0);
+			if (rc < 0) {
+				printk(KERN_ERR "oppo_chg_monitor_work: Couldn't clear USBIN_SUSPEND_BIT rc=%d\n", rc);
+				goto rerun_work;
+			}
+			msleep(10);
+			rc = smblib_masked_write(chg, AICL_CMD_REG, RESTART_AICL_BIT, RESTART_AICL_BIT);
+			if (rc < 0) {
+				printk(KERN_ERR "oppo_chg_monitor_work: Couldn't set RESTART_AICL_BIT rc=%d\n", rc);
+				goto rerun_work;
+			}
+			printk(KERN_ERR "oppo_chg_monitor_work: ichg[%d], fv[%d]\n", chip->icharging, oppo_chg_get_fv_monitor(chip));
+		}
+		counts = 0;
+	}
+
+rerun_work:
+	usb_online_status = false;
+	schedule_delayed_work(&chg->chg_monitor_work, OPPO_CHG_MONITOR_INTERVAL);
+}
+#endif /* VENDOR_EDIT */
 
 static int smblib_create_votables(struct smb_charger *chg)
 {
@@ -7533,6 +8185,18 @@ int smblib_init(struct smb_charger *chg)
 	INIT_WORK(&chg->dcin_aicl_work, dcin_aicl_work);
 	INIT_DELAYED_WORK(&chg->clear_hdc_work, clear_hdc_work);
 	INIT_DELAYED_WORK(&chg->icl_change_work, smblib_icl_change_work);
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2017/03/25, sjc Add for charging */
+	INIT_DELAYED_WORK(&chg->chg_monitor_work, oppo_chg_monitor_work);
+#endif
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/01/30, sjc Add for using gpio as CC detect */
+	INIT_DELAYED_WORK(&chg->ccdetect_work, oppo_ccdetect_work);
+#endif
+#ifdef VENDOR_EDIT
+/* Jianchao.Shi@BSP.CHG.Basic, 2018/04/13, sjc Add for charging */
+	INIT_DELAYED_WORK(&chg->typec_disable_cmd_work, typec_disable_cmd_work);
+#endif
 	INIT_DELAYED_WORK(&chg->pl_enable_work, smblib_pl_enable_work);
 	INIT_DELAYED_WORK(&chg->uusb_otg_work, smblib_uusb_otg_work);
 	INIT_DELAYED_WORK(&chg->bb_removal_work, smblib_bb_removal_work);
