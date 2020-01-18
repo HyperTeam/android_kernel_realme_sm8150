@@ -27,7 +27,7 @@
 #include <linux/delay.h>
 #include <linux/sysfs.h>
 #include <linux/workqueue.h>
-
+#include <linux/regulator/consumer.h>
 #include <soc/qcom/subsystem_restart.h>
 
 #define IMAGE_LOAD_CMD 1
@@ -355,6 +355,11 @@ const struct file_operations sensors_ssc_fops = {
 static int sensors_ssc_probe(struct platform_device *pdev)
 {
 	int ret = slpi_loader_init_sysfs(pdev);
+#ifdef VENDOR_EDIT
+//ye.zhang@BSP.Sensor, 2019-03-09, add for bring up sensor power by LSM6DSM timing
+	struct regulator *vdd_2v8 = NULL;
+	struct regulator *vio_1v8 = NULL;
+#endif
 
 	if (ret != 0) {
 		dev_err(&pdev->dev, "%s: Error in initing sysfs\n", __func__);
@@ -396,7 +401,37 @@ static int sensors_ssc_probe(struct platform_device *pdev)
 	}
 
 	INIT_WORK(&slpi_ldr_work, slpi_load_fw);
+#ifdef VENDOR_EDIT
+//ye.zhang@BSP.Sensor, 2019-03-09, add for bring up sensor power by LSM6DSM timing
+	vdd_2v8 = regulator_get(&pdev->dev, "vdd");
+	vio_1v8 = regulator_get(&pdev->dev, "vio");
 
+	if (vdd_2v8 != NULL)
+	{
+		dev_err(&pdev->dev,"%s: vdd_2v8 is not NULL\n", __func__);
+		regulator_set_voltage(vdd_2v8, 2856000, 3104000);
+		regulator_set_load(vdd_2v8, 200000);
+		ret = regulator_enable(vdd_2v8);
+		if (ret)
+			dev_err(&pdev->dev,"%s: vdd_2v8 enable fail\n", __func__);
+	}
+	else
+		dev_err(&pdev->dev,"%s: vdd_2v8 is NULL\n", __func__);
+
+	msleep(10);
+
+	if (vio_1v8 != NULL)
+	{
+		dev_err(&pdev->dev,"%s: vio_1v8 is not NULL\n", __func__);
+		regulator_set_voltage(vio_1v8, 2800000, 2800000);
+		regulator_set_load(vio_1v8, 200000);
+		ret = regulator_enable(vio_1v8);
+		if (ret)
+			dev_err(&pdev->dev,"%s: vio_1v8 enable fail\n", __func__);
+	}
+	else
+		dev_err(&pdev->dev,"%s: vio_1v8 is NULL\n", __func__);
+#endif//VENDOR_EDIT
 	return 0;
 
 cdev_add_err:
@@ -460,7 +495,11 @@ static void __exit sensors_ssc_exit(void)
 	platform_driver_unregister(&sensors_ssc_driver);
 }
 
+#ifdef VENDOR_EDIT
+subsys_initcall(sensors_ssc_init);
+#else
 module_init(sensors_ssc_init);
+#endif
 module_exit(sensors_ssc_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("Sensors SSC driver");
