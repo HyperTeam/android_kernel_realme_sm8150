@@ -71,12 +71,26 @@ static int notifier_chain_unregister(struct notifier_block **nl,
  *	@returns:	notifier_call_chain returns the value returned by the
  *			last notifier function called.
  */
+
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+extern int modem_show_info;
+extern u64 modem_head_addr;
+#endif /* VENDOR_EDIT */
 static int notifier_call_chain(struct notifier_block **nl,
 			       unsigned long val, void *v,
 			       int nr_to_call, int *nr_calls)
 {
 	int ret = NOTIFY_DONE;
 	struct notifier_block *nb, *next_nb;
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+	int print_on = 0;
+
+	if(modem_show_info && (modem_head_addr == (u64)nl)){
+		print_on = 1;
+	}
+#endif /* VENDOR_EDIT */
 
 	nb = rcu_dereference_raw(*nl);
 
@@ -90,7 +104,16 @@ static int notifier_call_chain(struct notifier_block **nl,
 			continue;
 		}
 #endif
+#ifdef VENDOR_EDIT
+/* Zhenjian.Jiang@BSP.Stability.Notify 2019/06/26 add for mark all restart modem notify call */
+		if (print_on)
+			printk(" before -- %pF \n", nb->notifier_call);
 		ret = nb->notifier_call(nb, val, v);
+		if (print_on)
+			printk(" after -- %pF \n", nb->notifier_call);
+#else
+		ret = nb->notifier_call(nb, val, v);
+#endif /* VENDOR_EDIT */
 
 		if (nr_calls)
 			(*nr_calls)++;
