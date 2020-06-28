@@ -50,4 +50,7 @@ struct msm_drm_notifier {
 
 int msm_drm_register_client(struct notifier_block *nb);
 int msm_drm_unregister_client(struct notifier_block *nb);
+
+static bool on_ambient_screen;
+bool device_is_dozing(void);
 #endif
