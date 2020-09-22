@@ -26,6 +26,10 @@
 #include <linux/firmware.h>
 #include <linux/completion.h>
 #include <linux/soc/qcom/fsa4480-i2c.h>
+#ifdef VENDOR_EDIT
+/*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
+#include <linux/soc/qcom/max20328.h>
+#endif
 #include <sound/soc.h>
 #include <sound/jack.h>
 #include "msm-cdc-pinctrl.h"
@@ -308,7 +312,26 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
 		else
 			/* enable current source and disable mb, pullup*/
+			#ifndef VENDOR_EDIT
+			/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+			 * 1.Modify for some headset button not work after headset mic
+			 * stop use.(ex: stop recording, hangup voice call without plug
+			 * out headset).
+			 * 2. Modify for headphone wrong detect as headset.1247369.
+			 * step: plug out headset when recording or in voice call,
+			 * then plug in a headphone, it detect as headset.
+			 */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+			#else /* VENDOR_EDIT */
+			{
+				pr_info("%s: current_plug %d\n", __func__, mbhc->current_plug);
+				if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET) {
+					wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
+				} else {
+					wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
+				}
+			}
+			#endif /* VENDOR_EDIT */
 
 		/* configure cap settings properly when micbias is disabled */
 		if (mbhc->mbhc_cb->set_cap_mode)
@@ -555,8 +578,13 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				enum snd_jack_types jack_type)
 {
 	struct snd_soc_codec *codec = mbhc->codec;
+	#ifndef VENDOR_EDIT
+	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+	 * Delete for headphone detect.
+	 */
 	bool is_pa_on = false;
 	u8 fsm_en = 0;
+	#endif /* VENDOR_EDIT */
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
@@ -572,10 +600,25 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		if (wcd_cancel_btn_work(mbhc)) {
 			pr_debug("%s: button press is canceled\n", __func__);
 		} else if (mbhc->buttons_pressed) {
+			#ifndef VENDOR_EDIT
+			/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+			 * Modify for headset detect.
+			 */
 			pr_debug("%s: release of button press%d\n",
 				 __func__, jack_type);
 			wcd_mbhc_jack_report(mbhc, &mbhc->button_jack, 0,
 					    mbhc->buttons_pressed);
+			#else /* VENDOR_EDIT */
+			pr_info("%s: release of button press%d\n",
+				 __func__, jack_type);
+			/* Ming.Liu@PSW.MM.AudioDriver.HeadsetDet, 2017/07/12,
+				Modified for supporting line control earphone volume key
+				up/down */
+			if (mbhc->buttons_pressed & (SND_JACK_BTN_2 | SND_JACK_BTN_3)) {
+				wcd_mbhc_jack_report(mbhc, &mbhc->button_jack, 0,
+					    mbhc->buttons_pressed);
+			}
+			#endif /* VENDOR_EDIT */
 			mbhc->buttons_pressed &=
 				~WCD_MBHC_JACK_BUTTON_MASK;
 		}
@@ -598,8 +641,16 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 
 		mbhc->hph_type = WCD_MBHC_HPH_NONE;
 		mbhc->zl = mbhc->zr = 0;
+		#ifndef VENDOR_EDIT
+		/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+		 * Modify for necessary log.
+		 */
 		pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
+		#else /* VENDOR_EDIT */
+		pr_info("%s: Reporting removal %d(%x)\n", __func__,
+			 jack_type, mbhc->hph_status);
+		#endif /* VENDOR_EDIT */
 		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
 				mbhc->hph_status, WCD_MBHC_JACK_MASK);
 		wcd_mbhc_set_and_turnoff_hph_padac(mbhc);
@@ -678,6 +729,10 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		} else if (jack_type == SND_JACK_ANC_HEADPHONE)
 			mbhc->current_plug = MBHC_PLUG_TYPE_ANC_HEADPHONE;
 
+		#ifndef VENDOR_EDIT
+		/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+		 * Delete for headphone detect.
+		 */
 		if (mbhc->mbhc_cb->hph_pa_on_status)
 			is_pa_on = mbhc->mbhc_cb->hph_pa_on_status(codec);
 
@@ -735,14 +790,27 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 						WCD_MBHC_JACK_MASK);
 			}
 		}
+		#endif /* VENDOR_EDIT */
 
 		mbhc->hph_status |= jack_type;
 
+		#ifndef VENDOR_EDIT
+		/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06 */
 		pr_debug("%s: Reporting insertion %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
 		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
 				    (mbhc->hph_status | SND_JACK_MECHANICAL),
 				    WCD_MBHC_JACK_MASK);
+		#else /* VENDOR_EDIT */
+		pr_err("%s: Reporting insertion jack_type=%d, (hph_status=%x)\
+			[1:headphone 3:headset 4:lineout]\n",
+			__func__, jack_type, mbhc->hph_status);
+		if (jack_type != SND_JACK_LINEOUT) {
+			wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
+				(mbhc->hph_status | SND_JACK_MECHANICAL),
+				WCD_MBHC_JACK_MASK);
+		}
+		#endif /* VENDOR_EDIT */
 		wcd_mbhc_clr_and_turnon_hph_padac(mbhc);
 	}
 	pr_debug("%s: leave hph_status %x\n", __func__, mbhc->hph_status);
@@ -799,8 +867,14 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 		return;
 	}
 
+	#ifndef VENDOR_EDIT
+	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06, Modify for necessary log */
 	pr_debug("%s: enter current_plug(%d) new_plug(%d)\n",
 		 __func__, mbhc->current_plug, plug_type);
+	#else /* VENDOR_EDIT */
+	pr_info("%s: enter current_plug(%d) new_plug(%d)\n",
+		 __func__, mbhc->current_plug, plug_type);
+	#endif /* VENDOR_EDIT */
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
@@ -864,7 +938,12 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 		     mbhc->current_plug, plug_type);
 	}
 exit:
+	#ifndef VENDOR_EDIT
+	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06, Modify for necessary log */
 	pr_debug("%s: leave\n", __func__);
+	#else /* VENDOR_EDIT */
+	pr_info("%s: leave\n", __func__);
+	#endif /* VENDOR_EDIT */
 }
 EXPORT_SYMBOL(wcd_mbhc_find_plug_and_report);
 
@@ -905,7 +984,28 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 	struct snd_soc_codec *codec = mbhc->codec;
 	enum snd_jack_types jack_type;
 
+#ifdef VENDOR_EDIT
+/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+ * Add for necessary log.
+ */
+#undef pr_debug
+#define pr_debug pr_info
+#endif /* VENDOR_EDIT */
+
+	#ifndef VENDOR_EDIT
+	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06, Modify for log*/
 	dev_dbg(codec->dev, "%s: enter\n", __func__);
+	#else /* VENDOR_EDIT */
+	pr_info("%s: enter\n", __func__);
+	#endif /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	/* Le.Li@PSW.MM.AudioDriver.HeadsetDet.1476958, 2018/07/18,
+	 * Add for Headset detect.
+	 */
+	cancel_delayed_work_sync(&mbhc->hp_detect_work);
+	#endif /* VENDOR_EDIT */
+
 	WCD_MBHC_RSC_LOCK(mbhc);
 	mbhc->in_swch_irq_handler = true;
 
@@ -940,6 +1040,11 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		if (wcd_mbhc_moisture_detect(mbhc, detection_type))
 			goto done;
 
+		#ifdef VENDOR_EDIT
+		/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2019/04/19,
+		 * change to Mic's voltage detection. */
+		max20328_set_LR_cnt(false);
+		#endif /* VENDOR_EDIT */
 		/* Make sure MASTER_BIAS_CTL is enabled */
 		mbhc->mbhc_cb->mbhc_bias(codec, true);
 
@@ -965,8 +1070,17 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 			mbhc->mbhc_cb->enable_mb_source(mbhc, true);
 		mbhc->btn_press_intr = false;
 		mbhc->is_btn_press = false;
+		#ifndef VENDOR_EDIT
+		/* Le.Li@PSW.MM.AudioDriver.HeadsetDet, 2018/03/22,
+		 * Modify for headset detect.
+		 */
 		if (mbhc->mbhc_fn)
 			mbhc->mbhc_fn->wcd_mbhc_detect_plug_type(mbhc);
+		#else /* VENDOR_EDIT */
+		if (mbhc->mbhc_fn) {
+			schedule_delayed_work(&mbhc->hp_detect_work, msecs_to_jiffies(50));
+		}
+		#endif /* VENDOR_EDIT */
 	} else if ((mbhc->current_plug != MBHC_PLUG_TYPE_NONE)
 			&& !detection_type) {
 		/* Disable external voltage source to micbias if present */
@@ -1058,6 +1172,14 @@ static irqreturn_t wcd_mbhc_mech_plug_detect_irq(int irq, void *data)
 	int r = IRQ_HANDLED;
 	struct wcd_mbhc *mbhc = data;
 
+#ifdef VENDOR_EDIT
+/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+ * Add for necessary log.
+ */
+#undef pr_debug
+#define pr_debug pr_info
+#endif /* VENDOR_EDIT */
+
 	pr_debug("%s: enter\n", __func__);
 	if (mbhc == NULL) {
 		pr_err("%s: NULL irq data\n", __func__);
@@ -1081,6 +1203,13 @@ int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc)
 	int btn;
 
 	btn = mbhc->mbhc_cb->map_btn_code_to_num(mbhc->codec);
+
+	#ifdef VENDOR_EDIT
+	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+	 * Add for headset button log.
+	 */
+	pr_info("%s: btn is %d", __func__, btn);
+	#endif /* VENDOR_EDIT */
 
 	switch (btn) {
 	case 0:
@@ -1114,6 +1243,14 @@ static void wcd_btn_lpress_fn(struct work_struct *work)
 	struct delayed_work *dwork;
 	struct wcd_mbhc *mbhc;
 	s16 btn_result = 0;
+
+#ifdef VENDOR_EDIT
+/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+ * Add for necessary log.
+ */
+#undef pr_debug
+#define pr_debug pr_info
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: Enter\n", __func__);
 
@@ -1160,6 +1297,14 @@ static irqreturn_t wcd_mbhc_btn_press_handler(int irq, void *data)
 	struct wcd_mbhc *mbhc = data;
 	int mask;
 	unsigned long msec_val;
+
+#ifdef VENDOR_EDIT
+/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+ * Add for necessary log.
+ */
+#undef pr_debug
+#define pr_debug pr_info
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: enter\n", __func__);
 	complete(&mbhc->btn_press_compl);
@@ -1211,6 +1356,14 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 	struct wcd_mbhc *mbhc = data;
 	int ret;
 
+#ifdef VENDOR_EDIT
+/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+ * Add for necessary log.
+ */
+#undef pr_debug
+#define pr_debug pr_info
+#endif /* VENDOR_EDIT */
+
 	pr_debug("%s: enter\n", __func__);
 	WCD_MBHC_RSC_LOCK(mbhc);
 	if (wcd_swch_level_remove(mbhc)) {
@@ -1234,7 +1387,12 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 	 */
 	if (mbhc->mbhc_detection_logic == WCD_DETECTION_LEGACY &&
 		mbhc->current_plug == MBHC_PLUG_TYPE_HEADPHONE) {
+		#ifndef VENDOR_EDIT
+		/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06,
+		 * Delete for headset detect.
+		 */
 		wcd_mbhc_find_plug_and_report(mbhc, MBHC_PLUG_TYPE_HEADSET);
+		#endif /* VENDOR_EDIT */
 		goto exit;
 
 	}
@@ -1376,6 +1534,15 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	 * by an external source
 	 */
 	if (mbhc->mbhc_cfg->enable_usbc_analog) {
+		#ifndef VENDOR_EDIT
+		/*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset jack to NO type*/
+		mbhc->hphl_swh = 0;
+		mbhc->gnd_swh = 0;
+		#else
+		mbhc->hphl_swh = 1;
+		mbhc->gnd_swh = 1;
+		#endif /* VENDOR_EDIT */
+
 		if (mbhc->mbhc_cb->hph_pull_up_control_v2)
 			mbhc->mbhc_cb->hph_pull_up_control_v2(codec,
 							      HS_PULLUP_I_OFF);
@@ -1407,12 +1574,22 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 		/* Insertion debounce set to 48ms */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 4);
 	} else {
+		#ifndef VENDOR_EDIT
+		//GuoWang.Huang@PSW.MM.AudioDriver.HeadsetDet, 2018/12/11, Modify the Debounce to 512ms
 		/* Insertion debounce set to 96ms */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 6);
+		#else
+		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 0xB);
+		#endif
 	}
 
 	/* Button Debounce set to 16ms */
+	#ifndef VENDOR_EDIT
+	//Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06, Modify the Debounce to 32ms
 	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_DBNC, 2);
+	#else
+	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_DBNC, 3);
+	#endif
 
 	/* Enable micbias ramp */
 	if (mbhc->mbhc_cb->mbhc_micb_ramp_control)
@@ -1579,7 +1756,12 @@ static int wcd_mbhc_set_keycode(struct wcd_mbhc *mbhc)
 static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 					   unsigned long mode, void *ptr)
 {
+    #ifndef VENDOR_EDIT
+    /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 	struct wcd_mbhc *mbhc = container_of(nb, struct wcd_mbhc, fsa_nb);
+	#else
+	struct wcd_mbhc *mbhc = container_of(nb, struct wcd_mbhc, switch_nb);
+        #endif
 
 	if (!mbhc)
 		return -EINVAL;
@@ -1601,6 +1783,10 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 	struct snd_soc_codec *codec;
 	struct snd_soc_card *card;
 	const char *usb_c_dt = "qcom,msm-mbhc-usbc-audio-supported";
+	#ifdef VENDOR_EDIT
+	/*Zhao.Pan@PSW.MM.AudioDriver.Headset, 2018/11/07, Add audio switch max20328*/
+	const char *usb_c_state = "oppo,usbc-switch";
+	#endif /* VENDOR_EDIT */
 
 	if (!mbhc || !mbhc_cfg)
 		return -EINVAL;
@@ -1626,12 +1812,28 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 		dev_dbg(card->dev,
 			"%s: skipping USB c analog configuration\n", __func__);
 	}
+	#ifdef VENDOR_EDIT
+	/*Zhao.Pan@PSW.MM.AudioDriver.Headset, 2018/11/07, Add audio switch max20328*/
+	else {
+		if (of_find_property(card->dev->of_node, usb_c_state, NULL)) {
+			rc = of_property_read_u32(card->dev->of_node, usb_c_state,
+					&mbhc_cfg->switch_type);
+		}
+		if ( rc != 0 || (mbhc_cfg->switch_type > USBC_SWITCH_MAX)) {
+			mbhc_cfg->switch_type = NO_USBC_SWITCH;
+			dev_err(card->dev, "%s: %s in dt node is missing or unsupport, set default %d\n",
+					__func__, usb_c_state, mbhc_cfg->switch_type);
+		}
+	}
+	#endif /* VENDOR_EDIT */
 
 	/* Parse fsa switch handle */
 	if (mbhc_cfg->enable_usbc_analog) {
 		dev_dbg(mbhc->codec->dev, "%s: usbc analog enabled\n",
 				__func__);
 		mbhc->swap_thr = GND_MIC_USBC_SWAP_THRESHOLD;
+		#ifndef VENDOR_EDIT
+        /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 		mbhc->fsa_np = of_parse_phandle(card->dev->of_node,
 				"fsa4480-i2c-handle", 0);
 		if (!mbhc->fsa_np) {
@@ -1640,6 +1842,27 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 			rc = -EINVAL;
 			goto err;
 		}
+		#else
+		if(MAX20328 == mbhc_cfg->switch_type) {
+			mbhc->switch_np = of_parse_phandle(card->dev->of_node,
+					"max20328-i2c-handle", 0);
+			if (!mbhc->switch_np) {
+				dev_err(card->dev, "%s: max20328 i2c node not found\n",
+					__func__);
+				rc = -EINVAL;
+				goto err;
+			}
+		} else {
+			mbhc->switch_np = of_parse_phandle(card->dev->of_node,
+				"fsa4480-i2c-handle", 0);
+			if (!mbhc->switch_np) {
+				dev_err(card->dev, "%s: fsa4480 i2c node not found\n",
+					__func__);
+				rc = -EINVAL;
+				goto err;
+			}
+		}
+		#endif
 	}
 
 	/* Set btn key code */
@@ -1665,9 +1888,26 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 	}
 
 	if (mbhc_cfg->enable_usbc_analog) {
+		#ifndef VENDOR_EDIT
+        /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 		mbhc->fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
 		mbhc->fsa_nb.priority = 0;
 		rc = fsa4480_reg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
+		#else
+		if (MAX20328 == mbhc_cfg->switch_type) {
+			/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/17,
+			* solve hs detection fail when hs pluged and restart phone*/
+			max20328_set_det_ready();
+
+			mbhc->switch_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
+			mbhc->switch_nb.priority = 0;
+			rc = max20328_reg_notifier(&mbhc->switch_nb, mbhc->switch_np);
+		} else {
+			mbhc->switch_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
+			mbhc->switch_nb.priority = 0;
+			rc = fsa4480_reg_notifier(&mbhc->switch_nb, mbhc->switch_np);
+		}
+		#endif /* VENDOR_EDIT */
 	}
 
 	return rc;
@@ -1704,7 +1944,12 @@ void wcd_mbhc_stop(struct wcd_mbhc *mbhc)
 	}
 
 	if (mbhc->mbhc_cfg->enable_usbc_analog)
+		#ifndef VENDOR_EDIT
+        /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 		fsa4480_unreg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
+		#else
+		max20328_unreg_notifier(&mbhc->switch_nb, mbhc->switch_np);
+		#endif
 
 	pr_debug("%s: leave\n", __func__);
 }

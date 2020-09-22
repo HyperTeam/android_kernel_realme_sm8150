@@ -5097,6 +5097,86 @@ static int tavil_codec_enable_micbias(struct snd_soc_dapm_widget *w,
 }
 
 
+#ifdef VENDOR_EDIT
+//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM micbias test
+static int micbias_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	int val=0;
+	int reg1_val = 0;
+	int reg2_val = 0;
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+
+	reg1_val = (snd_soc_read(codec, WCD934X_ANA_MICB1) >> 6);
+	reg2_val = (snd_soc_read(codec, WCD934X_ANA_MICB2) >> 6);
+
+	if (reg1_val == 0x01) {
+		val = 1;
+	} else if (reg2_val == 0x01){
+		val = 2;
+	} else {
+		val = 0;
+	}
+
+	ucontrol->value.integer.value[0] = val;
+	pr_err("%s val: %d\n", __func__, val);
+	return val;
+}
+
+static int micbias_put(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+
+	dev_err(codec->dev, "%s enter \n", __func__);
+	dev_err(codec->dev, "%s  micbias_put %ld : \n",__func__, ucontrol->value.integer.value[0]);
+	switch (ucontrol->value.integer.value[0]){
+	case 0:
+		tavil_micbias_control(codec, MIC_BIAS_1, MICB_DISABLE, false);
+		tavil_micbias_control(codec, MIC_BIAS_2, MICB_DISABLE, false);
+		tavil_cdc_mclk_enable(codec, false);
+		break;
+	case 1:
+		tavil_cdc_mclk_enable(codec, true);
+		tavil_micbias_control(codec, MIC_BIAS_1, MICB_ENABLE, false);
+		break;
+	case 2:
+		tavil_cdc_mclk_enable(codec, true);
+		tavil_micbias_control(codec, MIC_BIAS_2, MICB_ENABLE, false);
+		break;
+	default:
+		dev_err(codec->dev, "%s invalid val \n", __func__);
+	}
+	return 0;
+}
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM wcd9341 codec test
+static int ftm_wcd934x_rev_get(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct wcd9xxx *wcd9xxx = dev_get_drvdata(codec->dev->parent);
+
+	dev_err(codec->dev, "%s enter!\n", __func__);
+	pr_err("%s: wcd9xxx->version = %d!\n", __func__, wcd9xxx->version);
+
+	if (wcd9xxx->version == 5) {
+		ucontrol->value.integer.value[0] = 1;
+		pr_err("%s: wcd9xxx->version = TAVIL_VERSION_WCD9341_1_1!\n", __func__);
+	} else {
+		ucontrol->value.integer.value[0] = 0;
+	}
+	return 1;
+}
+
+static int ftm_wcd934x_rev_put(struct snd_kcontrol *kcontrol,
+		struct snd_ctl_elem_value *ucontrol) {
+	return 0;
+}
+#endif /* VENDOR_EDIT */
+
 static const struct reg_sequence tavil_hph_reset_tbl[] = {
 	{ WCD934X_HPH_CNP_EN, 0x80 },
 	{ WCD934X_HPH_CNP_WG_CTL, 0x9A },
@@ -6262,6 +6342,18 @@ static const char * const tavil_speaker_boost_stage_text[] = {
 	"NO_MAX_STATE", "MAX_STATE_1", "MAX_STATE_2"
 };
 
+#ifdef VENDOR_EDIT
+//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM micbias test
+static char const *ftm_wcd934x_micbias_ctrl_text[] = {"DISABLE", "MICBIAS1", "MICBIAS2"};
+static SOC_ENUM_SINGLE_EXT_DECL(ftm_wcd934x_micbias_ctl_enum, ftm_wcd934x_micbias_ctrl_text);
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM wcd9341 codec test
+static char const *ftm_wcd934x_rev_text[] = {"NG", "OK"};
+static SOC_ENUM_SINGLE_EXT_DECL(ftm_wcd934x_rev_enum, ftm_wcd934x_rev_text);
+#endif /* VENDOR_EDIT */
+
 static SOC_ENUM_SINGLE_EXT_DECL(tavil_ear_pa_gain_enum, tavil_ear_pa_gain_text);
 static SOC_ENUM_SINGLE_EXT_DECL(tavil_ear_spkr_pa_gain_enum,
 				tavil_ear_spkr_pa_gain_text);
@@ -6445,6 +6537,17 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
 	SOC_ENUM("RX INT8_1 HPF cut off", cf_int8_1_enum),
 	SOC_ENUM("RX INT8_2 HPF cut off", cf_int8_2_enum),
 
+	#ifdef VENDOR_EDIT
+	//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM micbias test
+	SOC_ENUM_EXT("Enable Micbias", ftm_wcd934x_micbias_ctl_enum,
+		micbias_get, micbias_put),
+	#endif /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	//Le.Li@PSW.MM.AudioDriver.FTM.954616, 2018/03/15, Add for FTM wcd9341 codec test
+	SOC_ENUM_EXT("HP_Pa Revision", ftm_wcd934x_rev_enum,
+		ftm_wcd934x_rev_get, ftm_wcd934x_rev_put),
+	#endif /* VENDOR_EDIT */
 	SOC_ENUM_EXT("RX HPH Mode", rx_hph_mode_mux_enum,
 		tavil_rx_hph_mode_get, tavil_rx_hph_mode_put),
 
