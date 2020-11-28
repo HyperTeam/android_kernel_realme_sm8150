@@ -59,9 +59,28 @@
 #include "braille.h"
 #include "internal.h"
 
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01 add for disable uart print
+#include <soc/oppo/boot_mode.h>
+#endif
+
 #ifdef CONFIG_EARLY_PRINTK_DIRECT
 extern void printascii(char *);
 #endif
+
+#ifdef VENDOR_EDIT
+//ye.zhang@BSP.CHG.Basic 2019/10/1,modify for get disable uart value from cmdline
+#ifdef CONFIG_OPPO_DEBUG_BUILD
+bool printk_disable_uart = false;
+#else
+bool printk_disable_uart = true;
+#endif
+
+bool oem_get_uartlog_status(void)
+{
+	return !printk_disable_uart;
+}
+#endif /*VENDOR_EDIT*/
 
 int console_printk[4] = {
 	CONSOLE_LOGLEVEL_DEFAULT,	/* console_loglevel */
@@ -591,6 +610,21 @@ static int log_store(int facility, int level,
 	u32 size, pad_len;
 	u16 trunc_msg_len = 0;
 
+    #ifdef VENDOR_EDIT 
+	//part 1/2: yixue.ge 2015-04-22 add for add cpu number and current id and current comm to kmsg
+    int this_cpu = smp_processor_id();
+    char tbuf[64];
+    unsigned tlen;
+
+    if (console_suspended == 0) {
+       tlen = snprintf(tbuf, sizeof(tbuf), " (%x)[%d:%s]",
+               this_cpu, current->pid, current->comm); 
+    } else {
+        tlen = snprintf(tbuf, sizeof(tbuf), " %x)", this_cpu);
+    }
+	text_len += tlen;
+	#endif //add end part 1/3
+
 	/* number of '\0' padding bytes to next message */
 	size = msg_used_size(text_len, dict_len, &pad_len);
 
@@ -615,7 +649,13 @@ static int log_store(int facility, int level,
 
 	/* fill message */
 	msg = (struct printk_log *)(log_buf + log_next_idx);
+    #ifndef VENDOR_EDIT 
+	//part 2/2: yixue.ge 2015-04-22 add for add cpu number and current id and current comm to kmsg
 	memcpy(log_text(msg), text, text_len);
+    #else
+	memcpy(log_text(msg), tbuf, tlen);
+	memcpy(log_text(msg) + tlen, text, text_len-tlen);
+	#endif //add end part 3/3
 	msg->text_len = text_len;
 	if (trunc_msg_len) {
 		memcpy(log_text(msg) + text_len, trunc_msg, trunc_msg_len);
@@ -1219,6 +1259,13 @@ static inline void boot_delay_msec(int level)
 static bool printk_time = IS_ENABLED(CONFIG_PRINTK_TIME);
 module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
 
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01,add for get disable uart value from cmdline
+#if !(defined(CONFIG_OPPO_DAILY_BUILD) || defined(CONFIG_OPPO_SPECIAL_BUILD))
+module_param_named(disable_uart, printk_disable_uart, bool, S_IRUGO | S_IWUSR);
+#endif
+#endif /*VENDOR_EDIT*/
+
 static size_t print_time(u64 ts, char *buf)
 {
 	unsigned long rem_nsec;
@@ -1714,6 +1761,17 @@ static void call_console_drivers(const char *ext_text, size_t ext_len,
 		return;
 
 	for_each_console(con) {
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/01,add for disable uart print,this modify can reduce poweron time add ftm mode
+		if(get_boot_mode() == MSM_BOOT_MODE__FACTORY
+		|| get_boot_mode() == MSM_BOOT_MODE__RF
+		|| get_boot_mode() == MSM_BOOT_MODE__WLAN)
+		{	
+		 	printk_disable_uart = true;
+		}
+		if (printk_disable_uart&&(con->flags & CON_CONSDEV))
+			continue;
+#endif
 		if (exclusive_console && con != exclusive_console)
 			continue;
 		if (!(con->flags & CON_ENABLED))
