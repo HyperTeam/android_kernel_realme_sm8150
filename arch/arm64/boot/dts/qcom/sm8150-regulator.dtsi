@@ -992,4 +992,15 @@
 		regulator-name = "refgen";
 		regulator-enable-ramp-delay = <5>;
 	};
+
+	//#ifdef VENDOR_EDIT
+	//wanghao@Bsp.Group.TP 2018/04/15 Added for synaptics using gpio supply 2v8
+	touchpanel_vdd: touchpanel_vdd {
+		compatible = "regulator-fixed";
+		regulator-name = "touchpanel_vdd";
+		startup-delay-us = <0>;
+		enable-active-high;
+		gpio = <&tlmm 90 0>;
+	};
+	//#endif
 };

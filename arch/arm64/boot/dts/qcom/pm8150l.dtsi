@@ -117,9 +117,9 @@
 			interrupts = <0x4 0x3d 0x0 IRQ_TYPE_NONE>,
 					<0x4 0x3d 0x1 IRQ_TYPE_NONE>,
 					<0x4 0x3d 0x2 IRQ_TYPE_NONE>;
-			interrupt-names = "bcl-lvl0",
-						"bcl-lvl1",
-						"bcl-lvl2";
+			interrupt-names = "bcl-vbat-lvl0",
+						"bcl-vbat-lvl1",
+						"bcl-vbat-lvl2";
 			#thermal-sensor-cells = <1>;
 		};
 
@@ -293,6 +293,15 @@
 				qcom,led-mask = <3>;
 				qcom,default-led-trigger = "switch2_trigger";
 			};
+			/* #ifdef VENDOR_EDIT */
+			/* modify by hongbo.dai@camera 20181124, for back dual flash*/
+			pm8150l_switch3: qcom,led_switch_3 {
+				label = "switch";
+				qcom,led-name = "led:switch_3";
+				qcom,led-mask = <3>;
+				qcom,default-led-trigger = "switch3_trigger";
+			};
+			/*#endif*/            
 		};
 
 		pm8150l_wled: qcom,wled@d800 {
