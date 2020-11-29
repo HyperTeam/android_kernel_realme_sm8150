@@ -28,4 +28,6 @@
 	model = "SDX50M MTP";
 	compatible = "qcom,sm8150-mtp", "qcom,sm8150", "qcom,mtp";
 	qcom,board-id = <0x01010008 0x1>;
+	/*oppo,prjversion. first one is the count of projects*/
+	oppo,prjversion = <1 19781>;
 };

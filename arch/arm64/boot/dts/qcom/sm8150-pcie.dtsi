@@ -17,6 +17,10 @@
 	pcie0: qcom,pcie@1c00000 {
 		compatible = "qcom,pci-msm";
 		cell-index = <0>;
+		//#ifdef VENDOR_EDIT
+		//Wanghao@BSP.Kernel.Function 2019/04/26 add for rf cable function
+		status = "disabled";
+		//#endif
 
 		reg = <0x1c00000 0x4000>,
 			<0x1c04000 0x1000>,
