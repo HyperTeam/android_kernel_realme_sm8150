@@ -121,6 +121,44 @@
 	qcom,platform-reset-gpio = <&tlmm 6 0>;
 };
 
+//#ifdef VENDOR_EDIT
+/*
+ * Gou shengjun@PSW.MM.Display.LCD.Stability, 2018/06/11,
+ * modify for 18115 samsung amoled
+ */
+&dsi_samsung_s6e3fc2x01_amoled_fhd_plus_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <1023>;
+	qcom,mdss-dsi-mode-sel-gpio-state = "single_port";
+	qcom,platform-te-gpio = <&tlmm 8 0>;
+	qcom,platform-reset-gpio = <&tlmm 6 0>;
+};
+
+&dsi_samsung_s6e3fc2x01_amoled_fhd_plus_61fps_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <1023>;
+	qcom,mdss-dsi-mode-sel-gpio-state = "single_port";
+	qcom,platform-te-gpio = <&tlmm 8 0>;
+	qcom,platform-reset-gpio = <&tlmm 6 0>;
+};
+
+&dsi_samsung_sofef03f_m_amoled_fhd_plus_90fps_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <2047>;
+	qcom,mdss-dsi-mode-sel-gpio-state = "single_port";
+	qcom,platform-te-gpio = <&tlmm 8 0>;
+	qcom,platform-reset-gpio = <&tlmm 6 0>;
+	qcom,panel-mode-gpio = <&tlmm 152 0>;    // vddd 1.1v
+	qcom,panel-vci-gpio = <&tlmm 25 0>;    // vci 3.0v
+};
+//#endif /*VENDOR_EDIT*/
+
 &dsi_sharp_4k_dsc_video {
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";

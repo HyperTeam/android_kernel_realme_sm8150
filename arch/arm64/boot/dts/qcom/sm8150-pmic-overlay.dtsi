@@ -18,25 +18,41 @@
 
 /* PMIC GPIO pin control configurations: */
 &pm8150_gpios {
-	key_home {
-		key_home_default: key_home_default {
-			pins = "gpio1";
-			function = "normal";
-			input-enable;
-			bias-pull-up;
-			power-source = <0>;
-		};
-	};
+//#ifdef VENDOR_EDIT
+//delete because this GPIO used for motor
+//	key_home {
+//		key_home_default: key_home_default {
+//			pins = "gpio1";
+//			function = "normal";
+//			input-enable;
+//			bias-pull-up;
+//			power-source = <0>;
+//		};
+//	};
+//#endif
 
+/*ifdef VENDOR_EDIT*/
+//Added by Tong.han@Bsp.Group.Tp for device-info,2015-4-13
 	key_vol_up {
 		key_vol_up_default: key_vol_up_default {
 			pins = "gpio6";
 			function = "normal";
 			input-enable;
-			bias-pull-up;
+			bias-disable;
 			power-source = <1>;
 		};
 	};
+
+	key_vol_down {
+		key_vol_down_default: key_vol_down_default {
+			pins = "gpio7";
+			function = "normal";
+			input-enable;
+			bias-disable;
+			power-source = <1>;
+		};
+	};
+/*endif*/
 
 	usb2_vbus_boost {
 		usb2_vbus_boost_default: usb2_vbus_boost_default {
@@ -56,9 +72,30 @@
 			power-source = <1>;	/* 1.8V input supply */
 		};
 	};
+/*ifdef VENDOR_EDIT*/
+//zhixian.Mai@camera, 2019/06/21, Add for pm8008 driver
+	cam_rear_reset_act {
+		cam_rear_reset_active: cam_rear_reset_active {
+			pins = "gpio1";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+	cam_rear_reset_susp {
+		cam_rear_reset_suspend: cam_rear_reset_suspend {
+			pins = "gpio1";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+/*endif*/
 };
 
 &pm8150l_gpios {
+	/* #ifdef VENDOR_EDIT */
+	/*
 	cam_sensor_eldo4 {
 		cam_sensor_eldo4_default: cam_sensor_eldo4_default {
 			pins = "gpio3";
@@ -76,6 +113,45 @@
 			output-low;
 		};
 	};
+	*/
+	/* #else */
+	cam_rear_vdig {
+		cam_rear_vdig_default: cam_rear_vdig_default {
+			pins = "gpio1";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+
+	cam_rear_vana {
+		cam_rear_vana_default: cam_rear_vana_default {
+		/*#ifdef VENDOR_EDIT*/
+		/*zhixian.Mai@camera, 2019/06/28, Remove for camera driver*/
+		//	pins = "gpio4";
+		/*#endif*/
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+	cam_rear_vaf_act {
+		cam_rear_vaf_active: cam_rear_vaf_active {
+			pins = "gpio3";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+	cam_rear_vaf_susp {
+		cam_rear_vaf_suspend: cam_rear_vaf_suspend {
+			pins = "gpio3";
+			function = "normal";
+			power-source = <0>;
+			output-low;
+		};
+	};
+	/* #endif */
 };
 
 &pm8150b_charger {
@@ -130,6 +206,28 @@
 			power-source = <0>;
 		};
 	};
+	/*ifdef VENDOR_EDIT*/
+	//Added by Tong.han@Bsp.Group.Tp for device-info,2015-4-13
+	hw_sub1_gpio_active {
+		hw_sub1_pullup: hw_sub1_pullup {
+			pins = "gpio8";
+			function = "normal";
+			input-enable;
+			bias-pull-up;
+			power-source = <1>;
+		};
+	};
+
+	hw_sub1_gpio_sleep {
+		hw_sub1_pulldown: hw_sub1_pulldown {
+			pins = "gpio8";
+			function = "normal";
+			input-enable;
+			bias-pull-down;
+			power-source = <1>;
+		};
+	};
+	/*endif*/
 };
 
 &usb0 {

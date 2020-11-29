@@ -111,6 +111,10 @@
 
 	qupv3_se4_i2c: i2c@890000 {
 		compatible = "qcom,i2c-geni";
+		//#ifdef VENDOR_EDIT
+		//Le.Li@PSW.MM.AudioDriver.SmartPA, 2019/09/29, Add to change IIC clk 100K
+		qcom,clk-freq-out = <100000>;
+		//#endif /*VENDOR_EDIT*/
 		reg = <0x890000 0x4000>;
 		interrupts = <GIC_SPI 605 0>;
 		#address-cells = <1>;
@@ -472,7 +476,14 @@
 		pinctrl-0 = <&qupv3_se8_i2c_active>;
 		pinctrl-1 = <&qupv3_se8_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_1>;
-		status = "disabled";
+//#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/04/20 for SVOOC		
+		qcom,clk-freq-out = <100000>;
+//#endif /*VENDOR_EDIT*/
+//#ifndef VENDOR_EDIT /* tongfeng.Huang@BSP.CHG.Basic, 2018/11/02,  Add for charging */
+		///status = "disabled";
+//#else
+		status = "ok";
+//#endif
 	};
 
 	qupv3_se9_i2c: i2c@a84000 {
@@ -620,7 +631,7 @@
 		status = "disabled";
 	};
 
-	qupv3_se10_spi: spi@a88000 {
+	/*qupv3_se10_spi: spi@a88000 {
 		compatible = "qcom,spi-geni";
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -640,7 +651,7 @@
 			<&gpi_dma1 1 2 1 64 0>;
 		dma-names = "tx", "rx";
 		status = "disabled";
-	};
+	};*/
 
 	qupv3_se11_spi: spi@a8c000 {
 		compatible = "qcom,spi-geni";
@@ -761,7 +772,14 @@
 		pinctrl-0 = <&qupv3_se15_i2c_active>;
 		pinctrl-1 = <&qupv3_se15_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_2>;
-		status = "disabled";
+//#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/04/20 for SVOOC		
+		qcom,clk-freq-out = <100000>;
+//#endif /*VENDOR_EDIT*/
+//#ifndef VENDOR_EDIT /* tongfeng.Huang@BSP.CHG.Basic, 2018/11/02,  Add for charging */
+		///status = "disabled";
+//#else
+		status = "ok";
+//#endif
 	};
 
 	qupv3_se16_i2c: i2c@0xa94000 {
@@ -801,7 +819,10 @@
 		pinctrl-0 = <&qupv3_se17_i2c_active>;
 		pinctrl-1 = <&qupv3_se17_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_2>;
-		status = "disabled";
+		//#ifdef VENDOR_EDIT
+		//Wanghao@BSP.group 2018-04-15 add for enable tp function
+		//status = "disabled";
+		//#endif
 	};
 
 	qupv3_se18_i2c: i2c@0xc84000 {
