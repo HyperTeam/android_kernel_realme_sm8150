@@ -43,50 +43,34 @@
 
 #define HAPTIC_MAX_TIMEOUT                  10000
 
-#define AW8697_VBAT_REFER                   4400
+#define AW8697_VBAT_REFER                   4200
 #define AW8697_VBAT_MIN                     3000
 #define AW8697_VBAT_MAX                     4500
-
 /* motor config */
 #define LRA_0619
-//#define LRA_0832
 
 #ifdef LRA_0619
-#define AW8697_HAPTIC_F0_PRE                1700    // 170Hz
-#define AW8697_HAPTIC_F0_CALI_PERCEN        7       // -7%~7%
-#ifdef VENDOR_EDIT
-/* tongfeng.Huang@BSP.CHG.Basic, 2019/01/09,  Add for F0  voltage */
-#define AW8697_HAPTIC_CONT_DRV_LVL          52     // 105*6.1/256=2.50v
-#else
-#define AW8697_HAPTIC_CONT_DRV_LVL          105     // 105*6.1/256=2.50v
-#endif
-#define AW8697_HAPTIC_CONT_DRV_LVL_OV       125     // 125*6.1/256=2.98v
+#define AW8697_HAPTIC_F0_PRE                1700    /* 170Hz*/
+#define AW8697_HAPTIC_F0_CALI_PERCEN        7       /* -7%~7%*/
+#define AW8697_HAPTIC_CONT_DRV_LVL          97  /*op modify for count mode*/   /* value*6.1/256*/
+#define AW8697_HAPTIC_CONT_DRV_LVL_OV       97 /*op modify for count mode*/    /* value*6.1/256*/
 #define AW8697_HAPTIC_CONT_TD               0x009a
 #define AW8697_HAPTIC_CONT_ZC_THR           0x0ff1
 #define AW8697_HAPTIC_CONT_NUM_BRK          3
 #endif
 
 #ifdef LRA_0832
-#define AW8697_HAPTIC_F0_PRE                2350    // 170Hz
-#define AW8697_HAPTIC_F0_CALI_PERCEN        7       // -7%~7%
-#define AW8697_HAPTIC_CONT_DRV_LVL          125     // 125*6.1/256=2.98v
-#define AW8697_HAPTIC_CONT_DRV_LVL_OV       155     // 155*6.1/256=3.69v
+#define AW8697_HAPTIC_F0_PRE                2350    /* 170Hz*/
+#define AW8697_HAPTIC_F0_CALI_PERCEN        7       /* -7%~7%*/
+#define AW8697_HAPTIC_CONT_DRV_LVL          125     /* 125*6.1/256=2.98v*/
+#define AW8697_HAPTIC_CONT_DRV_LVL_OV       155     /*155*6.1/256=3.69v*/
 #define AW8697_HAPTIC_CONT_TD               0x006c
 #define AW8697_HAPTIC_CONT_ZC_THR           0x0ff1
 #define AW8697_HAPTIC_CONT_NUM_BRK          3
 #endif
-#ifdef VENDOR_EDIT
-/* Hang.Zhao@PSW.BSP.CHG.Basic,2019/10/25, Modify for different haptics */
-#define AW8697_19696_HAPTIC_F0_PRE                2350    // 235Hz
-#define AW8697_19696_HAPTIC_F0_CALI_PERCEN        7       // -7%~7%
-#define AW8697_19696_HAPTIC_CONT_DRV_LVL          105     // 125*6.1/256=2.98v
-#define AW8697_19696_HAPTIC_CONT_DRV_LVL_OV       125     // 155*6.1/256=3.69v
-#define AW8697_19696_HAPTIC_CONT_TD               0x006c
-#define AW8697_19696_HAPTIC_CONT_ZC_THR           0x0ff1
-#define AW8697_19696_HAPTIC_CONT_NUM_BRK          3
-#endif
 
-#define AW8697_HAPTIC_F0_COEFF              260     //2.604167
+
+#define AW8697_HAPTIC_F0_COEFF              260     /*2.604167*/
 
 
 /* trig config */
@@ -94,7 +78,6 @@
 #define AW8697_TRG1_ENABLE                  1
 #define AW8697_TRG2_ENABLE                  1
 #define AW8697_TRG3_ENABLE                  1
-
 /*
  * trig default high level
  * ___________           _________________
@@ -182,9 +165,6 @@
 #else
 #define AW8697_TRG3_DEFAULT_EDGE            AW8697_BIT_TRGCFG1_TRG3_EDGE_POS
 #endif
-
-#define AW8697_RTP_NUM		6
-
 enum aw8697_flags {
     AW8697_FLAG_NONR = 0,
     AW8697_FLAG_SKIP_INTERRUPTS = 1,
@@ -237,11 +217,114 @@ enum aw8697_haptic_pwm_mode {
     AW8697_PWM_12K = 2,
 };
 
+
+enum aw8697_haptic_play {
+    AW8697_HAPTIC_PLAY_NULL = 0,
+    AW8697_HAPTIC_PLAY_ENABLE = 1,
+    AW8697_HAPTIC_PLAY_STOP = 2,
+    AW8697_HAPTIC_PLAY_GAIN = 8,
+};
+
+enum aw8697_haptic_cmd {
+    AW8697_HAPTIC_CMD_NULL = 0,
+    AW8697_HAPTIC_CMD_ENABLE = 1,
+    AW8697_HAPTIC_CMD_HAPTIC = 0x0f,
+    AW8697_HAPTIC_CMD_TP = 0x10,
+    AW8697_HAPTIC_CMD_SYS = 0xf0,
+    AW8697_HAPTIC_CMD_STOP = 255,
+};
+
+enum aw8697_haptic_tp_flag {
+    AW8697_HAPTIC_TP_NULL = 0,
+    AW8697_HAPTIC_TP_PRESS = 1,
+    AW8697_HAPTIC_TP_PRESS_HOLD = 2,
+    AW8697_HAPTIC_TP_RELEASE = 3,
+    AW8697_HAPTIC_TP_RELEASE_HOLD = 4,
+};
+
+enum aw8697_haptic_tp_staus {
+    AW8697_HAPTIC_TP_ST_RELEASE = 0,
+    AW8697_HAPTIC_TP_ST_PRESS = 1,
+};
+
+enum aw8697_haptic_tp_play_flag {
+    AW8697_HAPTIC_TP_PLAY_NULL = 0,
+    AW8697_HAPTIC_TP_PLAY_ENABLE = 1,
+    AW8697_HAPTIC_TP_PLAY_NOMORE= 2,
+};
+
+
+enum aw8697_haptic_tp_touch_flag {
+    AW8697_HAPTIC_TP_TOUCH_INVAIL = 0,
+    AW8697_HAPTIC_TP_TOUCH_VAIL = 1,
+};
+
+#define AW8697_HAPTIC_TP_ID_MAX     10
+
+
+#define AW8697_HAPTIC_AI_X_JITTER	20
+#define AW8697_HAPTIC_AI_Y_JITTER	20
+#define AW8697_HAPTIC_AI_X_DFT_W	200
+#define AW8697_HAPTIC_AI_Y_DFT_H	200
+
+
+enum aw8697_haptic_tz_level {
+    AW8697_HAPTIC_TZ_LEVEL_LOW = 0,
+    AW8697_HAPTIC_TZ_LEVEL_HIGH = 1,
+};
+
 /*********************************************************
  *
  * struct
  *
  ********************************************************/
+struct tp_input_info {
+    uint8_t  id;
+    uint8_t  status;
+    uint16_t x;
+    uint16_t y;
+};
+
+struct trust_zone_info {
+    uint8_t  level;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+};
+
+struct ai_trust_zone {
+    uint8_t  num;
+    struct trust_zone_info *tz_info;
+};
+
+
+struct haptic_audio_trust_zone {
+    uint8_t  level;//tz score
+    uint8_t  cnt;
+    uint8_t  dirty;
+    uint16_t x;
+    uint16_t y;
+    uint16_t w;
+    uint16_t h;
+    struct list_head list;
+};
+
+struct haptic_audio_tp_size {
+    uint16_t x;
+    uint16_t y;
+};
+
+struct shake_point {
+    uint8_t  id;
+    uint16_t x;
+    uint16_t y;
+    uint8_t  status;
+    uint8_t  touch_flag;
+    uint8_t  touch_outside_tz_flag;
+};
+
+
 struct fileops {
     unsigned char cmd;
     unsigned char reg;
@@ -259,11 +342,43 @@ struct ram {
 };
 
 struct haptic_ctr{
+    unsigned char cnt;
     unsigned char cmd;
     unsigned char play;
     unsigned char wavseq;
     unsigned char loop;
     unsigned char gain;
+    struct list_head list;
+};
+
+struct tp_id{
+    struct shake_point pt_info;
+    unsigned char tp_flag;
+    unsigned char press_flag;
+    unsigned char release_flag;
+    struct timeval t_press;
+    struct timeval t_release;
+    unsigned char play_flag;
+    unsigned int no_play_cnt;
+    unsigned char tp_ai_match_flag;
+    unsigned char press_no_vibrate_flag;
+    unsigned char release_no_vibrate_flag;
+};
+
+struct tp{
+    struct tp_id id[AW8697_HAPTIC_TP_ID_MAX+1];
+    unsigned char id_index;
+    unsigned char virtual_id;
+    unsigned int press_delay_min;
+    unsigned int press_delay_max;
+    unsigned int release_delay_max;
+    unsigned char play_flag;
+    unsigned char last_play_flag;
+    unsigned char press_flag;
+    unsigned char tp_ai_match_flag;
+    unsigned char tp_ai_check_flag;
+    unsigned char hap_match_without_tz_cnt;
+    unsigned int no_play_cnt_max;
 };
 
 struct haptic_audio{
@@ -272,9 +387,21 @@ struct haptic_audio{
     struct work_struct work;
     int delay_val;
     int timer_val;
-    unsigned char cnt;
-    struct haptic_ctr data[256];
     struct haptic_ctr ctr;
+    struct list_head ctr_list;
+    struct tp tp;
+    struct list_head list;
+    struct list_head score_list;
+    struct haptic_audio_tp_size tp_size;
+    struct trust_zone_info output_tz_info[10];
+    int tz_num;
+    int tz_high_num;
+    int tz_cnt_thr;
+    int tz_cnt_max;
+    int tz_init;
+    unsigned int uevent_report_flag;
+    unsigned int hap_cnt_outside_tz;
+    unsigned int hap_cnt_max_outside_tz;
 };
 
 struct trig{
@@ -290,15 +417,16 @@ struct aw8697 {
     struct i2c_client *i2c;
     struct device *dev;
     struct input_dev *input;
-
+    struct pinctrl *pinctrl;
+    struct pinctrl_state *pinctrl_state_active;
     struct mutex lock;
-	struct mutex rtp_lock;
     struct hrtimer timer;
     struct work_struct vibrator_work;
     struct work_struct rtp_work;
-    struct work_struct rtp_single_cycle_work;
-    struct work_struct rtp_regroup_work;
     struct delayed_work ram_work;
+    struct timeval current_time;
+    struct timeval pre_enter_time;
+    struct wakeup_source vibrator_on;
 #ifdef TIMED_OUTPUT
     struct timed_output_dev to_dev;
 #else
@@ -306,16 +434,19 @@ struct aw8697 {
 #endif
     struct fileops fileops;
     struct ram ram;
+    bool pm_awake;
     bool haptic_ready;
     bool audio_ready;
+    bool ignore_sync;
     int pre_haptic_number;
+    bool rtp_on;
     struct timeval start,end;
     unsigned int timeval_flags;
     unsigned int osc_cali_flag;
     unsigned long int microsecond;
     unsigned int sys_frequency;
     unsigned int rtp_len;
-
+    unsigned int lra_calib_data;
 
     int reset_gpio;
     int irq_gpio;
@@ -327,7 +458,6 @@ struct aw8697 {
     unsigned char play_mode;
 
     unsigned char activate_mode;
-
     unsigned char auto_boost;
 
     int state;
@@ -342,9 +472,6 @@ struct aw8697 {
 
     unsigned int rtp_cnt;
     unsigned int rtp_file_num;
-    unsigned int rtp_loop;
-    unsigned int rtp_cycle_flag;
-    unsigned int rtp_serial[AW8697_RTP_NUM];
 
     unsigned char rtp_init;
     unsigned char ram_init;
@@ -365,20 +492,21 @@ struct aw8697 {
     unsigned char ram_vbat_comp;
     unsigned int vbat;
     unsigned int lra;
-	unsigned char haptic_real_f0;
-
+    unsigned int ram_bin_index;
+    unsigned int haptic_real_f0;
     unsigned int ram_test_flag_0;
     unsigned int ram_test_flag_1;
+    unsigned int ram_test_result;
+    bool count_go;
 
     struct trig trig[AW8697_TRIG_NUM];
-
     struct haptic_audio haptic_audio;
-	
-#ifdef VENDOR_EDIT
-	/* tongfeng.Huang@BSP.CHG.Basic, 2018/11/24,  Add for operat para */
-	struct work_struct	motor_old_test_work;
-	unsigned int motor_old_test_mode;
-#endif
+    struct mutex rtp_lock;
+    struct timeval t_stop;
+    struct timeval t_start;
+    unsigned int game_microsecond;
+    unsigned int interval_us;
+    struct notifier_block fb_notif;/*register to control tp report*/
 };
 
 struct aw8697_container{
@@ -410,83 +538,5 @@ struct aw8697_que_seq {
 #define AW8697_HAPTIC_SET_BST_PEAK_CUR    _IOWR(AW8697_HAPTIC_IOCTL_MAGIC, 5, unsigned int)
 #define AW8697_HAPTIC_SET_GAIN            _IOWR(AW8697_HAPTIC_IOCTL_MAGIC, 6, unsigned int)
 #define AW8697_HAPTIC_PLAY_REPEAT_SEQ     _IOWR(AW8697_HAPTIC_IOCTL_MAGIC, 7, unsigned int)
-
-#ifdef VENDOR_EDIT
-/* tongfeng.Huang@BSP.CHG.Basic, 2018/11/24,  Add for operat para */
-#define OPPO_F0_VAL_MAX                     1780
-#define OPPO_F0_VAL_MIN                     1650
-#define OPPO_F0_VAL_MAX_19696               2400
-#define OPPO_F0_VAL_MIN_19696               2300
-
-#define AW8697_HAPTIC_BASE_VOLTAGE			6000
-#define AW8697_HAPTIC_MAX_VOLTAGE			10000
-#define AW8697_HAPTIC_LOW_LEVEL_VOL			800
-#define AW8697_HAPTIC_LOW_LEVEL_REG_VAL		0
-#define AW8697_HAPTIC_MEDIUM_LEVEL_VOL		1600
-#define AW8697_HAPTIC_MEDIUM_LEVEL_REG_VAL	0
-#define AW8697_HAPTIC_HIGH_LEVEL_VOL		2500
-#define AW8697_HAPTIC_HIGH_LEVEL_REG_VAL	0x1A
-
-//#define AW8697_HAPTIC_RAM_VBAT_COMP_GAIN	0x80
-
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_1		1
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_2		2
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_3		3
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_4		4
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_5		5
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_6		6
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_7		7
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_8		8
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_9		9
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_10		10
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_11		11
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_12		12
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_13		13
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_14		14
-#define AW8697_OPPO_WAVEFORM_INDEX_TRADITIONAL_15		15
-
-#define AW8697_OPPO_RTP_LONG_SOUND_INDEX                44
-#define AUDIO_READY_STATUS  1024
-#define RINGTONES_START_INDEX   1
-#define RINGTONES_END_INDEX  40
-#define RINGTONES_SIMPLE_INDEX	48
-#define RINGTONES_PURE_INDEX	49
-#define NEW_RING_START			120
-#define NEW_RING_END			160
-
-
-#define AW8697_OPPO_WAVEFORM_INDEX_CS_PRESS				16
-#define AW8697_OPPO_WAVEFORM_INDEX_TRANSIENT			8
-#define AW8697_OPPO_WAVEFORM_INDEX_SINE_CYCLE			9
-#define AW8697_OPPO_WAVEFORM_INDEX_HIGH_TEMP			51
-#define AW8697_OPPO_WAVEFORM_INDEX_OLD_STEADY			52
-#define AW8697_OPPO_WAVEFORM_INDEX_LISTEN_POP			53
-
-
-enum aw8697_haptic_custom_level {
-    HAPTIC_CUSTOM_LEVEL_WEAK = 0,  // 3V
-    HAPTIC_CUSTOM_LEVEL_MEDIUM = 1,// 6V
-    HAPTIC_CUSTOM_LEVEL_STRONG = 2,// 9V
-};
-
-
-enum aw8697_haptic_custom_vibration_mode {
-    VIBRATION_MODE_TRADITIONAL = 0,
-    VIBRATION_MODE_RING = 1,
-    VIBRATION_MODE_GAME = 2,
-};
-
-
-enum aw8697_haptic_motor_old_test_mode {
-    MOTOR_OLD_TEST_TRANSIENT = 1,
-    MOTOR_OLD_TEST_STEADY = 2,
-    MOTOR_OLD_TEST_HIGH_TEMP_HUMIDITY = 3,
-    MOTOR_OLD_TEST_LISTEN_POP = 4,
-    MOTOR_OLD_TEST_ALL_NUM,   
-};
-
-
-#endif
-
 #endif
 
