@@ -561,7 +561,7 @@
 				compatible = "android,vbmeta";
 			//#ifdef VENDOR_EDIT
 			//zhye@BSP.Sensor, modify for disable A/B partition
-				parts = "vbmeta,boot,recovery,system,vendor,dtbo";
+				parts = "vbmeta,boot,recovery,system,vendor,dtbo,odm";
 			//#else
 			//	parts = "vbmeta,boot,system,vendor,dtbo,odm";
 			//#endif
@@ -578,17 +578,14 @@
 					//#endif
 					status = "ok";
 				};
-			//#ifdef VENDOR_EDIT
-			//zhye@BSP.Sensor, delete for bring up, 20190715
-			//	odm {
-			//		compatible = "android,odm";
-			//		dev = "/dev/block/platform/soc/8804000.sdhci/by-name/odm";
-			//		type = "ext4";
-			//		mnt_flags = "ro,barrier=1,discard";
-			//		fsmgr_flags = "wait,slotselect,avb";
-			//		status = "ok";
-			//	};
-			//#endif
+				odm {
+					compatible = "android,odm";
+					dev = "/dev/block/platform/soc/8804000.sdhci/by-name/odm";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,discard";
+					fsmgr_flags = "wait,avb";
+					status = "ok";
+				};
 			};
 		};
 	};
