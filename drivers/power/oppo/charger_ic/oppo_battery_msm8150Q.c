@@ -14440,7 +14440,7 @@ int oppo_chg_get_charger_subtype(void)
 }
 
 extern int oppo_pdo_select(int vbus_mv, int ibus_ma);
-int oppo_chg_set_pd_config()
+int oppo_chg_set_pd_config(void)
 {
 	int ret = 0;
 	struct oppo_chg_chip *chip = g_oppo_chip;
@@ -14507,7 +14507,7 @@ int oppo_chg_enable_qc_detect(void)
 	return ret;
 }
 
-int oppo_chg_set_qc_config()
+int oppo_chg_set_qc_config(void)
 {
 	int ret = 0;
 	struct smb_charger *chg = NULL;
