@@ -681,7 +681,16 @@ int acpi_device_add(struct acpi_device *device,
 		if (!acpi_device_bus_id->bus_id) {
 			pr_err(PREFIX "Memory allocation error for bus id\n");
 			result = -ENOMEM;
-			goto err_free_new_bus_id;
+			goto err_unlock;
+		}
+
+		ida_init(&acpi_device_bus_id->instance_ida);
+
+		result = acpi_device_set_name(device, acpi_device_bus_id);
+		if (result) {
+			kfree_const(acpi_device_bus_id->bus_id);
+			kfree(acpi_device_bus_id);
+			goto err_unlock;
 		}
 
 		acpi_device_bus_id->instance_no = 0;
