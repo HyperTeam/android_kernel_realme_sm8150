@@ -35,3 +35,4 @@ obj-$(CONFIG_SMI130)   += sensors/smi130/
 
 # Oppo secure common
 obj-$(CONFIG_OPPO_FINGERPRINT)  += oppo_seccommon_drivers/
+obj-$(CONFIG_OPPO_FINGERPRINT)  += oppo_fp_drivers/
