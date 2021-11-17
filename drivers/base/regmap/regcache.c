@@ -499,7 +499,12 @@ EXPORT_SYMBOL_GPL(regcache_drop_region);
 void regcache_cache_only(struct regmap *map, bool enable)
 {
 	map->lock(map->lock_arg);
+	#ifndef OPLUS_ARCH_EXTENDS
+	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.PLATFORM.1234162, 2020/08/14,
+	 *Delete for uart issue due to warning log.
+	 */
 	WARN_ON(map->cache_bypass && enable);
+	#endif /* OPLUS_ARCH_EXTENDS */
 	map->cache_only = enable;
 	trace_regmap_cache_only(map, enable);
 	map->unlock(map->lock_arg);
