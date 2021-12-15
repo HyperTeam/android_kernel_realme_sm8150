@@ -67,6 +67,10 @@ size_t get_cal_info_size(int32_t cal_type)
 	case ADM_AUDPROC_CAL_TYPE:
 	case ADM_LSM_AUDPROC_CAL_TYPE:
 	case ADM_LSM_AUDPROC_PERSISTENT_CAL_TYPE:
+#ifdef OPLUS_ARCH_EXTENDS
+/*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
+	case ADM_AUDPROC_PERSISTENT_CAL_TYPE:
+#endif /* OPLUS_ARCH_EXTENDS */
 		size = sizeof(struct audio_cal_info_audproc);
 		break;
 	case ADM_AUDVOL_CAL_TYPE:
@@ -221,6 +225,10 @@ size_t get_user_cal_type_size(int32_t cal_type)
 	case ADM_AUDPROC_CAL_TYPE:
 	case ADM_LSM_AUDPROC_CAL_TYPE:
 	case ADM_LSM_AUDPROC_PERSISTENT_CAL_TYPE:
+#ifdef OPLUS_ARCH_EXTENDS
+/*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
+	case ADM_AUDPROC_PERSISTENT_CAL_TYPE:
+#endif /* OPLUS_ARCH_EXTENDS */
 		size = sizeof(struct audio_cal_type_audproc);
 		break;
 	case ADM_AUDVOL_CAL_TYPE:
@@ -1086,6 +1094,7 @@ bool cal_utils_is_cal_stale(struct cal_block_data *cal_block)
 		pr_err("%s: cal_block is Null", __func__);
 		goto unlock;
 	}
+
 	if (cal_block->cal_stale)
 	    ret = true;
 
