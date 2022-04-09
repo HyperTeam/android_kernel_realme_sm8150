@@ -15,7 +15,7 @@
 #include "cam_ois_soc.h"
 #include "cam_ois_core.h"
 #include "cam_debug_util.h"
-#include <soc/oplus/system/oppo_project.h>
+#include <soc/oppo/oppo_project.h>
 #include "onsemi_fw/fw_download_interface.h"
 
 static long cam_ois_subdev_ioctl(struct v4l2_subdev *sd,

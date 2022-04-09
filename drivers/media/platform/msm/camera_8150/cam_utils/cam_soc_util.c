@@ -18,7 +18,7 @@
 #include "cam_soc_util.h"
 #include "cam_debug_util.h"
 #include "cam_cx_ipeak.h"
-#include <soc/oplus/system/oppo_project.h>
+#include <soc/oppo/oppo_project.h>
 
 static char supported_clk_info[256];
 static char debugfs_dir_name[64];
