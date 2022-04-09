@@ -21,7 +21,7 @@
 #include "cam_res_mgr_api.h"
 #include "cam_common_util.h"
 #include "cam_packet_util.h"
-#include <soc/oplus/system/oppo_project.h>
+#include <soc/oppo/oppo_project.h>
 #ifdef VENDOR_EDIT
 #include "onsemi_fw/fw_download_interface.h"
 

@@ -16,7 +16,7 @@
 #include <cam_sensor_util.h>
 #include <cam_sensor_io.h>
 #include <cam_req_mgr_util.h>
-#include <soc/oplus/system/oppo_project.h>
+#include <soc/oppo/oppo_project.h>
 #include "cam_ois_soc.h"
 #include "cam_debug_util.h"
 
