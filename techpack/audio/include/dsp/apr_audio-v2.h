@@ -1377,11 +1377,11 @@ struct adm_cmd_connect_afe_port_v5 {
 #define INT_FM_TX 0x3005
 #define RT_PROXY_PORT_001_RX	0x2000
 #define RT_PROXY_PORT_001_TX	0x2001
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
  * add for RX-to-TX AFE Loopback for AEC path */
 #define AFE_LOOPBACK_TX	0x6001
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 #define DISPLAY_PORT_RX	0x6020
 
 #define AFE_PORT_INVALID 0xFFFF
@@ -10744,7 +10744,7 @@ struct afe_spkr_prot_calib_get_resp {
 	struct asm_calib_res_cfg res_cfg;
 } __packed;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.CODEC, 2020/09/27, Add for Max98937*/
 #ifdef CONFIG_SND_SOC_MAX98937
 /*Maxim DSM module and parameters IDs*/
@@ -10776,7 +10776,7 @@ struct afe_dsm_get_resp {
 } __packed;
 
 #endif
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 /* SRS TRUMEDIA start */
 /* topology */

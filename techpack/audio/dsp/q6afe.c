@@ -171,12 +171,12 @@ struct afe_ctl {
 	/* FTM spk params */
 	uint32_t initial_cal;
 	uint32_t v_vali_flag;
-/*#ifdef OPLUS_ARCH_EXTENDS*/
+/*#ifdef VENDOR_EDIT*/
 /* Wan.li@MULTIMEDIA.AUDIODRIVER.CODEC, 2020/09/27, Add for Max98937 */
 #ifdef CONFIG_SND_SOC_MAX98937
 	uint8_t *dsm_payload;
 #endif
-/*#endif*/   // OPLUS_ARCH_EXTENDS
+/*#endif*/   // VENDOR_EDIT
 };
 
 static atomic_t afe_ports_mad_type[SLIMBUS_PORT_LAST - SLIMBUS_0_RX];
@@ -473,7 +473,7 @@ static int32_t sp_make_afe_callback(uint32_t opcode, uint32_t *payload,
 				struct afe_sp_rx_tmax_xmax_logging_param);
 		data_dest = (u32 *) &this_afe.xt_logging_resp;
 		break;
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.CODEC, 2020/09/27, Add for Max98937*/
 #ifdef CONFIG_SND_SOC_MAX98937
     case AFE_PARAM_ID_DSM_CFG:
@@ -486,7 +486,7 @@ static int32_t sp_make_afe_callback(uint32_t opcode, uint32_t *payload,
 	data_dest     = (u32*) this_afe.dsm_payload;
         break;
 #endif
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	default:
 		pr_err("%s: Unrecognized param ID %d\n", __func__,
 		       param_hdr.param_id);
@@ -1711,7 +1711,7 @@ fail_cmd:
 	return ret;
 }
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.CODEC, 2020/09/27, Add for Max98937*/
 #ifdef CONFIG_SND_SOC_MAX98937
 static int afe_dsm_set_params(int port, int module_id, int param_id, uint8_t *payload, int size)
@@ -1844,7 +1844,7 @@ int afe_dsm_set_status(uint8_t* payload)
 }
 EXPORT_SYMBOL(afe_dsm_set_status);
 #endif
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 static int afe_spk_prot_prepare(int src_port, int dst_port, int param_id,
 				union afe_spkr_prot_config *prot_config)
@@ -2563,7 +2563,7 @@ static struct cal_block_data *afe_find_cal(int cal_index, int port_id)
 			pr_debug("%s: cal block is a match, size is %zd\n",
 				 __func__, cal_block->cal_data.size);
 			goto exit;
-		#ifdef OPLUS_ARCH_EXTENDS
+		#ifdef VENDOR_EDIT
 		/* Ming.Liu@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/17, add for speaker protection for voip */
 		} else if ((afe_port_index == IDX_AFE_PORT_ID_TERTIARY_MI2S_RX)
 			&& (afe_cal_info->acdb_id == this_afe.dev_acdb_id[afe_port_index])) {
@@ -5004,12 +5004,12 @@ int afe_get_port_index(u16 port_id)
 		return IDX_RT_PROXY_PORT_002_RX;
 	case RT_PROXY_PORT_002_TX:
 		return IDX_RT_PROXY_PORT_002_TX;
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 	/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 	 * add for RX-to-TX AFE Loopback for AEC path */
 	case AFE_LOOPBACK_TX:
 		return IDX_AFE_LOOPBACK_TX;
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	default:
 		pr_err("%s: port 0x%x\n", __func__, port_id);
 		return -EINVAL;

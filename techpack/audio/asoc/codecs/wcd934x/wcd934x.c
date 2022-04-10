@@ -52,7 +52,7 @@
 #include "wcd934x-dsd.h"
 
 //yangmingjin@BSP.POWER.Basic 2020/01/04 add to avoid bob noise for typec headset
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 #include <linux/power_supply.h>
 #include <linux/workqueue.h>
 #endif
@@ -675,7 +675,7 @@ static const struct tavil_reg_mask_val tavil_spkr_mode1[] = {
 	{WCD934X_CDC_BOOST1_BOOST_CTL, 0x7C, 0x44},
 };
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 //zhenyu.dong@rm.POWER.Codec 2020/01/07 add to avoid bob noise for typec headset
 struct typec_headset_data {
 	struct wcd9xxx *pwcd934x_priv;
@@ -683,7 +683,7 @@ struct typec_headset_data {
 };
 
 int wcd934x_headset_bob_regulator_set_mode(unsigned int bob_mode);
-#endif /* OPLUS_ARCH_EXTENDS*/
+#endif /* VENDOR_EDIT*/
 
 static int __tavil_enable_efuse_sensing(struct tavil_priv *tavil);
 
@@ -5712,7 +5712,7 @@ static int tavil_compander_put(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*zhenyu.dong@RM.MM.AudioDriver.Codec, 2020/01/11,
  *Add for fix headset capture noise which headset switch use bob regulator.
  */
@@ -5776,7 +5776,7 @@ static int bob_regulator_mode_switch_set(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 static int tavil_hph_asrc_mode_put(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
@@ -6400,14 +6400,14 @@ static SOC_ENUM_SINGLE_DECL(cf_int8_2_enum, WCD934X_CDC_RX8_RX_PATH_MIX_CFG, 2,
 							rx_cf_text);
 
 static const struct snd_kcontrol_new tavil_snd_controls[] = {
-    #ifdef OPLUS_ARCH_EXTENDS
+    #ifdef VENDOR_EDIT
 	/*zhenyu.dong@rm.MM.AudioDriver.Codec, 2020/01/11,
 	 *Add for fix headset capture noise which headset switch use bob regulator.
 	 */
 	SOC_ENUM_EXT("Bob Regulator Mode Switch", pmic_bob_ctl_enum[0],
 			bob_regulator_mode_switch_get,
 			bob_regulator_mode_switch_set),
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	SOC_ENUM_EXT("EAR PA Gain", tavil_ear_pa_gain_enum,
 		tavil_ear_pa_gain_get, tavil_ear_pa_gain_put),
@@ -10340,7 +10340,7 @@ done:
 	return ret;
 }
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 static struct typec_headset_data g_typec_headset_data;
 static int wcd934x_get_bob_regulator_index_by_name(const char *name){
 	struct wcd9xxx_pdata *pwcd934x_pdata = g_typec_headset_data.pwcd934x_pdata;
@@ -10600,7 +10600,7 @@ static int tavil_soc_codec_probe(struct snd_soc_codec *codec)
 	tavil_wdsp_initialize(codec);
 
         //yangmingjin@BSP.POWER.Basic 2020/01/04 add to avoid bob noise for typec headset
-        #ifdef OPLUS_ARCH_EXTENDS
+        #ifdef VENDOR_EDIT
         wcd934x_typec_headset_data_init(control, pdata);
         #endif
 

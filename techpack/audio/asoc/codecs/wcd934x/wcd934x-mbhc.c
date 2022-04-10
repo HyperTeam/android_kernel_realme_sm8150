@@ -778,10 +778,10 @@ static void tavil_mbhc_gnd_det_ctrl(struct snd_soc_codec *codec, bool enable)
 	}
 }
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 //GuoWang.Huang@PSW.MM.AudioDriver.Headset, 2019/11/06,
 bool g_enable_usbc_analog = false;
-#endif //OPLUS_ARCH_EXTENDS
+#endif //VENDOR_EDIT
 
 static void tavil_mbhc_hph_pull_down_ctrl(struct snd_soc_codec *codec,
 					  bool enable)
@@ -792,7 +792,7 @@ static void tavil_mbhc_hph_pull_down_ctrl(struct snd_soc_codec *codec,
 		snd_soc_update_bits(codec, WCD934X_HPH_PA_CTL2,
 				    0x10, 0x10);
 	} else {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Zhao.Pan@PSW.MM.AudioDriver.Headset.2311848, 2019/10/15,
 		 *not set L/R 100K, avoid plug in noise*/
 		snd_soc_update_bits(codec, WCD934X_HPH_PA_CTL2,
@@ -806,7 +806,7 @@ static void tavil_mbhc_hph_pull_down_ctrl(struct snd_soc_codec *codec,
 			snd_soc_update_bits(codec, WCD934X_HPH_PA_CTL2,
 				    0x10, 0x00);
 		}
-		#endif //OPLUS_ARCH_EXTENDS
+		#endif //VENDOR_EDIT
 	}
 }
 static void tavil_mbhc_moisture_config(struct wcd_mbhc *mbhc)

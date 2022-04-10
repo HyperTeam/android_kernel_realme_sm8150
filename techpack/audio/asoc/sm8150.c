@@ -22,7 +22,7 @@
 #include <linux/of_device.h>
 #include <linux/pm_qos.h>
 #include <linux/soc/qcom/fsa4480-i2c.h>
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 //RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328
 #include <linux/soc/qcom/max20328.h>
 #endif
@@ -78,7 +78,7 @@
 
 #define TDM_MAX_SLOTS		8
 #define TDM_SLOT_WIDTH_BITS	32
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 //RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328
 extern bool max20328_state;
 #endif
@@ -181,7 +181,7 @@ struct msm_asoc_mach_data {
 	struct device_node *hph_en1_gpio_p; /* used by pinctrl API */
 	struct device_node *hph_en0_gpio_p; /* used by pinctrl API */
 	struct device_node *fsa_handle;
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	//RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328
 	struct device_node *max_handle;
 	#endif
@@ -655,7 +655,7 @@ static struct wcd_mbhc_config wcd_mbhc_cfg = {
 	.key_code[6] = 0,
 	.key_code[7] = 0,
 	.linein_th = 5000,
-    #ifndef OPLUS_ARCH_EXTENDS
+    #ifndef VENDOR_EDIT
     /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 	.moisture_en = true,
 	#else
@@ -3408,11 +3408,11 @@ static const struct snd_soc_dapm_widget msm_dapm_widgets_tavil[] = {
 	SND_SOC_DAPM_MIC("Digital Mic5", NULL),
 };
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/09/27, Add for oplus extend audio*/
 extern void extend_codec_i2s_be_dailinks(struct snd_soc_dai_link *dailink, size_t size);
 static void (*extend_i2s_be_dailinks_func)(struct snd_soc_dai_link *dailink, size_t size);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 static inline int param_is_mask(int p)
 {
@@ -3891,7 +3891,7 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_codec *codec, bool active)
 	struct snd_soc_card *card = codec->component.card;
 	struct msm_asoc_mach_data *pdata =
 				snd_soc_card_get_drvdata(card);
-#ifndef OPLUS_ARCH_EXTENDS
+#ifndef VENDOR_EDIT
 //RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328
 	if (!pdata->fsa_handle)
 			return false;
@@ -4339,7 +4339,7 @@ static void *def_wcd_mbhc_cal(void)
 		return NULL;
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(wcd_mbhc_cal)->X) = (Y))
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/* xiang.fei@PSW.MM.AudioDriver.HeadsetDet, 2019/10/15,
 	 * Modify the threshold value of mic irq.
 	 */
@@ -4356,7 +4356,7 @@ static void *def_wcd_mbhc_cal(void)
 	btn_high = ((void *)&btn_cfg->_v_btn_low) +
 		(sizeof(btn_cfg->_v_btn_low[0]) * btn_cfg->num_btn);
 
-#ifndef OPLUS_ARCH_EXTENDS
+#ifndef VENDOR_EDIT
 /* xiang.fei@PSW.MM.AudioDriver.HeadsetDet, 2019/10/15, modify for headset button det */
 	btn_high[0] = 75;
 	btn_high[1] = 150;
@@ -7016,7 +7016,7 @@ static struct snd_soc_dai_link msm_auxpcm_be_dai_links[] = {
 	},
 };
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/09/27, Add for Max98937*/
 #ifdef CONFIG_SND_SOC_MAX98937
 static struct snd_soc_dai_link maxim_fe_dai[] = {
@@ -7085,7 +7085,7 @@ static struct snd_soc_dai_link maxim_be_dai_links[] = {
 	},
 };
 #endif
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 static struct snd_soc_dai_link msm_pahu_snd_card_dai_links[
 			 ARRAY_SIZE(msm_common_dai_links) +
@@ -7098,7 +7098,7 @@ static struct snd_soc_dai_link msm_pahu_snd_card_dai_links[
 			 ARRAY_SIZE(msm_mi2s_be_dai_links) +
 			 ARRAY_SIZE(msm_auxpcm_be_dai_links)];
 
-#ifndef OPLUS_ARCH_EXTENDS
+#ifndef VENDOR_EDIT
 /*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/09/27, Modify for Max98937*/
 static struct snd_soc_dai_link msm_tavil_dai_links[
 			 ARRAY_SIZE(msm_common_dai_links) +
@@ -7110,7 +7110,7 @@ static struct snd_soc_dai_link msm_tavil_dai_links[
 			 ARRAY_SIZE(ext_disp_be_dai_link) +
 			 ARRAY_SIZE(msm_mi2s_be_dai_links) +
 			 ARRAY_SIZE(msm_auxpcm_be_dai_links)];
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 #ifdef CONFIG_SND_SOC_MAX98937
 static struct snd_soc_dai_link msm_tavil_dai_links[
 			 ARRAY_SIZE(msm_common_dai_links) +
@@ -7137,7 +7137,7 @@ static struct snd_soc_dai_link msm_tavil_dai_links[
 			 ARRAY_SIZE(msm_auxpcm_be_dai_links)];
 
 #endif
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 static int msm_snd_card_tavil_late_probe(struct snd_soc_card *card)
 {
@@ -7416,7 +7416,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 	const struct of_device_id *match;
 	int ret = 0;
 	u32 val = 0;
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/09/27, Modify for Max98928*/
 	int i;
 	const char *product_name = NULL;
@@ -7424,7 +7424,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 	const char *stereo_mode_str = "oppo,speaker-stereo-mode";
 	u32 config_stereo_mode = 0;
 	struct snd_soc_dai_link *temp_link;
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	match = of_match_node(sm8150_asoc_machine_of_match, dev->of_node);
 	if (!match) {
@@ -7433,11 +7433,11 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 		return NULL;
 	}
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE.SmartPA, 2020/11/02, Add for stereo speaker*/
 	of_property_read_u32(dev->of_node, stereo_mode_str, &config_stereo_mode);
 	pr_info("%s config_stereo_mode %d\n", __func__, config_stereo_mode);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	if (!strcmp(match->data, "pahu_codec")) {
 		card = &snd_soc_card_pahu_msm;
@@ -7552,7 +7552,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 		ret = of_property_read_u32(dev->of_node,
 					   "qcom,mi2s-audio-intf", &val);
 		if (!ret && val) {
-			#ifdef OPLUS_ARCH_EXTENDS
+			#ifdef VENDOR_EDIT
 			/*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for Max98937*/
 			if (!of_property_read_string(dev->of_node, oppo_speaker_type,
 					&product_name)) {
@@ -7583,7 +7583,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 			if(extend_i2s_be_dailinks_func){
 				extend_i2s_be_dailinks_func(msm_mi2s_be_dai_links, ARRAY_SIZE(msm_mi2s_be_dai_links));
 			}
-			#endif /* OPLUS_ARCH_EXTENDS */
+			#endif /* VENDOR_EDIT */
 			memcpy(msm_tavil_dai_links + total_links,
 			       msm_mi2s_be_dai_links,
 			       sizeof(msm_mi2s_be_dai_links));
@@ -7598,7 +7598,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 			sizeof(msm_auxpcm_be_dai_links));
 			total_links += ARRAY_SIZE(msm_auxpcm_be_dai_links);
 		}
-		#ifdef OPLUS_ARCH_EXTENDS
+		#ifdef VENDOR_EDIT
 		/*Wan.li@MULTIMEDIA.AUDIODRIVER.MACHINE, 2020/09/27, Modify for Max98937*/
 		if (!of_property_read_string(dev->of_node, oppo_speaker_type, &product_name)) {
 			#ifdef CONFIG_SND_SOC_MAX98937
@@ -7610,7 +7610,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
 			}
 			#endif
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 		dailink = msm_tavil_dai_links;
 	} else if (!strcmp(match->data, "stub_codec")) {
 		card = &snd_soc_card_stub_msm;
@@ -8039,7 +8039,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	if (wcd_mbhc_cfg.enable_usbc_analog)
 		wcd_mbhc_cfg.swap_gnd_mic = msm_usbc_swap_gnd_mic;
 
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328 Modify for headset switch (max20328)*/
 	pdata->fsa_handle = of_parse_phandle(pdev->dev.of_node,
 					     "fsa4480-i2c-handle", 0);
@@ -8064,7 +8064,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 		pr_err("%s: max20328_state1 %d.\n",__func__, max20328_state);
 		max20328_state = true;
 		}
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	/* Parse pinctrl info from devicetree */
 	ret = msm_get_pinctrl(pdev);
@@ -8087,10 +8087,10 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 		pr_err("%s: Audio notifier register failed ret = %d\n",
 			__func__, ret);
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Modify for MAX20328 Add for log*/
 	pr_err("%s: sound card register success.\n", __func__);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	return 0;
 err:

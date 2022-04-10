@@ -138,14 +138,14 @@ do {                                                    \
 				  SND_JACK_BTN_2 | SND_JACK_BTN_3 | \
 				  SND_JACK_BTN_4 | SND_JACK_BTN_5)
 #define OCP_ATTEMPT 20
-#ifndef OPLUS_ARCH_EXTENDS
+#ifndef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET.959366, 2020/08/14,
  *Modify for headphone detect.
  */
 #define HS_DETECT_PLUG_TIME_MS (3 * 1000)
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 #define HS_DETECT_PLUG_TIME_MS (5 * 1000)
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 #define SPECIAL_HS_DETECT_TIME_MS (2 * 1000)
 #define MBHC_BUTTON_PRESS_THRESHOLD_MIN 250
 #define GND_MIC_SWAP_THRESHOLD 4
@@ -439,7 +439,7 @@ enum mbhc_moisture_rref {
 	R_184_KOHM,
 };
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhao.Pan@PSW.MM.AudioDriver.Headset, 2018/11/07, Add audio switch max20328*/
 enum usbc_switch_type {
     NO_USBC_SWITCH = 0,
@@ -447,7 +447,7 @@ enum usbc_switch_type {
     MAX20328,
     USBC_SWITCH_MAX = MAX20328,
 };
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 struct wcd_mbhc_config {
 	bool read_fw_bin;
@@ -464,10 +464,10 @@ struct wcd_mbhc_config {
 	int anc_micbias;
 	bool enable_anc_mic_detect;
 	u32 enable_usbc_analog;
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Add audio switch max20328*/
 	enum usbc_switch_type switch_type;
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 	bool moisture_duty_cycle_en;
 	struct usbc_ana_audio_config usbc_analog_cfg;
 	bool fsa_enable;
@@ -640,7 +640,7 @@ struct wcd_mbhc {
 	int usbc_mode;
 	struct device_node *fsa_np;
 	struct notifier_block fsa_nb;
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER.1825796, 2020/10/17, Add audio switch max20328*/
 	struct device_node *switch_np;
 	struct notifier_block switch_nb;
@@ -649,16 +649,16 @@ struct wcd_mbhc {
 	struct power_supply *usb_psy;
 	struct work_struct usbc_analog_work;
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/07/31,
 	 *Add for mbhc cross connection.
 	 */
 	bool need_cross_conn;
-	#endif /* OPLUS_ARCH_EXTENDS */
-	#ifdef OPLUS_ARCH_EXTENDS
+	#endif /* VENDOR_EDIT */
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/14, Add for headset detect.*/
 	struct delayed_work hp_detect_work;
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 };
 

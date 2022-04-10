@@ -26,7 +26,7 @@
 #include <linux/firmware.h>
 #include <linux/completion.h>
 #include <linux/soc/qcom/fsa4480-i2c.h>
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Modify for headset switch (max20328)*/
 #include <linux/soc/qcom/max20328.h>
 #endif
@@ -42,7 +42,7 @@
 //Qica,gu@PSW.BSP.TP, 2020/08/06, Add for notify headset status to TP
 extern void switch_headset_state(int headset_state);
 #endif /* OPLUS_FEATURE_TP_BASIC */
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Modify for headset switch (max20328)*/
 bool max20328_state =false;
 EXPORT_SYMBOL(max20328_state);
@@ -323,7 +323,7 @@ out_micb_en:
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_PULLUP);
 		else
 			/* enable current source and disable mb, pullup*/
-			#ifndef OPLUS_ARCH_EXTENDS
+			#ifndef VENDOR_EDIT
 			/* Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSET, 2020/08/13,
 			 * 1.Modify for some headset button not work after headset mic
 			 * stop use.(ex: stop recording, hangup voice call without plug
@@ -333,7 +333,7 @@ out_micb_en:
 			 * then plug in a headphone, it detect as headset.
 			 */
 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
-			#else /* OPLUS_ARCH_EXTENDS */
+			#else /* VENDOR_EDIT */
 			{
 				pr_info("%s: current_plug %d\n", __func__, mbhc->current_plug);
 				if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET) {
@@ -342,7 +342,7 @@ out_micb_en:
 					wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_CS);
 				}
 			}
-			#endif /* OPLUS_ARCH_EXTENDS */
+			#endif /* VENDOR_EDIT */
 
 		/* configure cap settings properly when micbias is disabled */
 		if (mbhc->mbhc_cb->set_cap_mode)
@@ -563,11 +563,11 @@ void wcd_mbhc_hs_elec_irq(struct wcd_mbhc *mbhc, int irq_type,
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSET, 2020/08/13, Add for log*/
 	pr_info("%s: enter irq_type: %d, enable: %d\n",
 		__func__, irq_type, enable);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	if (irq_type == WCD_MBHC_ELEC_HS_INS)
 		irq = mbhc->intr_ids->mbhc_hs_ins_intr;
@@ -595,13 +595,13 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				enum snd_jack_types jack_type)
 {
 	struct snd_soc_codec *codec = mbhc->codec;
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSET.1379744, 2020/08/13,
 	 *Delete for headphone detect.
 	 */
 	bool is_pa_on = false;
 	u8 fsm_en = 0;
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
@@ -617,7 +617,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		if (wcd_cancel_btn_work(mbhc)) {
 			pr_debug("%s: button press is canceled\n", __func__);
 		} else if (mbhc->buttons_pressed) {
-			#ifndef OPLUS_ARCH_EXTENDS
+			#ifndef VENDOR_EDIT
 			/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSET, 2020/08/13,
 			 *Modify for headset detect.
 			 */
@@ -625,7 +625,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				 __func__, jack_type);
 			wcd_mbhc_jack_report(mbhc, &mbhc->button_jack, 0,
 					    mbhc->buttons_pressed);
-			#else /* OPLUS_ARCH_EXTENDS */
+			#else /* VENDOR_EDIT */
 			pr_info("%s: release of button press%d\n",
 				 __func__, jack_type);
 			/* Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSET, 2020/08/13,
@@ -635,7 +635,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				wcd_mbhc_jack_report(mbhc, &mbhc->button_jack, 0,
 					    mbhc->buttons_pressed);
 			}
-			#endif /* OPLUS_ARCH_EXTENDS */
+			#endif /* VENDOR_EDIT */
 			mbhc->buttons_pressed &=
 				~WCD_MBHC_JACK_BUTTON_MASK;
 		}
@@ -658,16 +658,16 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 
 		mbhc->hph_type = WCD_MBHC_HPH_NONE;
 		mbhc->zl = mbhc->zr = 0;
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET 2020/07/31,
 		 *Modify for necessary log.
 		 */
 		pr_debug("%s: Reporting removal %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
-		#else /* OPLUS_ARCH_EXTENDS */
+		#else /* VENDOR_EDIT */
 		pr_info("%s: Reporting removal %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 
 		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
 				mbhc->hph_status, WCD_MBHC_JACK_MASK);
@@ -747,7 +747,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		} else if (jack_type == SND_JACK_ANC_HEADPHONE)
 			mbhc->current_plug = MBHC_PLUG_TYPE_ANC_HEADPHONE;
 
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSETDET.1379744, 2020/08/13,
 		 *Delete for headphone detect.
 		 */
@@ -808,18 +808,18 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 						WCD_MBHC_JACK_MASK);
 			}
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 
 		mbhc->hph_status |= jack_type;
 
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET.1379744, 2020/07/31, Modify for log*/
 		pr_debug("%s: Reporting insertion %d(%x)\n", __func__,
 			 jack_type, mbhc->hph_status);
 		wcd_mbhc_jack_report(mbhc, &mbhc->headset_jack,
 				    (mbhc->hph_status | SND_JACK_MECHANICAL),
 				    WCD_MBHC_JACK_MASK);
-		#else /* OPLUS_ARCH_EXTENDS */
+		#else /* VENDOR_EDIT */
 		pr_info("%s: [1:headphone 3:headset 4:lineout]\n", __func__);
 		pr_info("%s: Reporting insertion jack_type=%d, (hph_status=0x%x)\n",
 			__func__, jack_type, mbhc->hph_status);
@@ -828,7 +828,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 				(mbhc->hph_status | SND_JACK_MECHANICAL),
 				WCD_MBHC_JACK_MASK);
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 		wcd_mbhc_clr_and_turnon_hph_padac(mbhc);
 	}
 
@@ -843,10 +843,10 @@ EXPORT_SYMBOL(wcd_mbhc_report_plug);
 
 void wcd_mbhc_elec_hs_report_unplug(struct wcd_mbhc *mbhc)
 {
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, 2019/09/25, Add for log*/
 	pr_info("%s: enter\n", __func__);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	/* cancel pending button press */
 	if (wcd_cancel_btn_work(mbhc))
@@ -896,14 +896,14 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 		return;
 	}
 
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETSETDET, 2020/07/31, Modify for necessary log*/
 	pr_debug("%s: enter current_plug(%d) new_plug(%d)\n",
 		 __func__, mbhc->current_plug, plug_type);
-	#else /* OPLUS_ARCH_EXTENDS */
+	#else /* VENDOR_EDIT */
 	pr_info("%s: enter current_plug(%d) new_plug(%d)\n",
 		 __func__, mbhc->current_plug, plug_type);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	WCD_MBHC_RSC_ASSERT_LOCKED(mbhc);
 
@@ -967,12 +967,12 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 		     mbhc->current_plug, plug_type);
 	}
 exit:
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, Modify for necessary log*/
 	pr_debug("%s: leave\n", __func__);
-	#else /* OPLUS_ARCH_EXTENDS */
+	#else /* VENDOR_EDIT */
 	pr_info("%s: leave\n", __func__);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 }
 EXPORT_SYMBOL(wcd_mbhc_find_plug_and_report);
 
@@ -1002,10 +1002,10 @@ static bool wcd_mbhc_moisture_detect(struct wcd_mbhc *mbhc, bool detection_type)
 		mbhc->mbhc_cb->mbhc_moisture_polling_ctrl(mbhc, false);
 		mbhc->mbhc_cb->mbhc_moisture_detect_en(mbhc, false);
 	}
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, Add for log*/
 	pr_info("%s: leave\n", __func__);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	return ret;
 }
@@ -1016,13 +1016,13 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 	bool micbias1 = false;
 	struct snd_soc_codec *codec = mbhc->codec;
 	enum snd_jack_types jack_type;
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, Add for Headset detect*/
 	if (!mbhc->mbhc_cfg->enable_usbc_analog) {
 	    cancel_delayed_work_sync(&mbhc->hp_detect_work);
 	}
-	#endif /* OPLUS_ARCH_EXTENDS */
-#ifdef OPLUS_ARCH_EXTENDS
+	#endif /* VENDOR_EDIT */
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
  *Add for necessary log.
  */
@@ -1031,29 +1031,29 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 
 #undef dev_dbg
 #define dev_dbg dev_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /* RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17
  * Add for necessary log.
  */
 #undef pr_debug
 #define pr_debug pr_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/* Zhao.Pan@PSW.MM.AudioDriver.HeadsetDet, 2018/12/06, Modify for log*/
 	dev_dbg(codec->dev, "%s: enter\n", __func__);
-	#else /* OPLUS_ARCH_EXTENDS */
+	#else /* VENDOR_EDIT */
 	pr_info("%s: enter\n", __func__);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/* RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17
 	 * Add for Headset detect.
 	 */
 	cancel_delayed_work_sync(&mbhc->hp_detect_work);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	WCD_MBHC_RSC_LOCK(mbhc);
 	mbhc->in_swch_irq_handler = true;
@@ -1089,7 +1089,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		if (wcd_mbhc_moisture_detect(mbhc, detection_type))
 			goto done;
 
-		#ifdef OPLUS_ARCH_EXTENDS
+		#ifdef VENDOR_EDIT
 		/* RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17
 		 * change to Mic's voltage detection. */
 		 pr_err("%s: mbhc->mbhc_cfg->switch_type = %d\n", __func__, mbhc->mbhc_cfg->switch_type);
@@ -1122,11 +1122,11 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 			mbhc->mbhc_cb->enable_mb_source(mbhc, true);
 		mbhc->btn_press_intr = false;
 		mbhc->is_btn_press = false;
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, Modify for headset detect*/
 		if (mbhc->mbhc_fn)
 			mbhc->mbhc_fn->wcd_mbhc_detect_plug_type(mbhc);
-		#else /* OPLUS_ARCH_EXTENDS */
+		#else /* VENDOR_EDIT */
 		if (mbhc->mbhc_fn) {
 		    if (mbhc->mbhc_cfg->enable_usbc_analog) {
 		        mbhc->mbhc_fn->wcd_mbhc_detect_plug_type(mbhc);
@@ -1134,7 +1134,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		        schedule_delayed_work(&mbhc->hp_detect_work, msecs_to_jiffies(400));
 		    }
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 	} else if ((mbhc->current_plug != MBHC_PLUG_TYPE_NONE)
 			&& !detection_type) {
 		/* Disable external voltage source to micbias if present */
@@ -1188,7 +1188,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_ELECT_SCHMT_ISRC, 0);
 		mbhc->extn_cable_hph_rem = false;
 		wcd_mbhc_report_plug(mbhc, 0, jack_type);
-#ifndef OPLUS_ARCH_EXTENDS
+#ifndef VENDOR_EDIT
 		if (mbhc->mbhc_cfg->enable_usbc_analog &&
 			mbhc->mbhc_cfg->fsa_enable) {
 #else
@@ -1210,7 +1210,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 		}
 
 	} else if (!detection_type) {
-		#ifdef OPLUS_ARCH_EXTENDS
+		#ifdef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
 		 *Add for disable micbias, when insert a HPH_HIGH device and detect as special
 		 *headset device(micbias_enable is true), then remove device before report
@@ -1232,7 +1232,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 			}
 			mbhc->micbias_enable = false;
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 
 		/* Disable external voltage source to micbias if present */
 		if (mbhc->mbhc_cb->enable_mb_source)
@@ -1254,13 +1254,13 @@ static irqreturn_t wcd_mbhc_mech_plug_detect_irq(int irq, void *data)
 	int r = IRQ_HANDLED;
 	struct wcd_mbhc *mbhc = data;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
  *Add for necessary log.
  */
 #undef pr_debug
 #define pr_debug pr_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: enter\n", __func__);
 	if (mbhc == NULL) {
@@ -1286,12 +1286,12 @@ int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc)
 
 	btn = mbhc->mbhc_cb->map_btn_code_to_num(mbhc->codec);
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/* Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/07/31,
 	 * Add for headset button log.
 	 */
 	pr_info("%s: btn is %d", __func__, btn);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	switch (btn) {
 	case 0:
@@ -1326,13 +1326,13 @@ static void wcd_btn_lpress_fn(struct work_struct *work)
 	struct wcd_mbhc *mbhc;
 	s16 btn_result = 0;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
  *Add for necessary log.
  */
 #undef pr_debug
 #define pr_debug pr_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: Enter\n", __func__);
 
@@ -1380,13 +1380,13 @@ static irqreturn_t wcd_mbhc_btn_press_handler(int irq, void *data)
 	int mask;
 	unsigned long msec_val;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
  *Add for necessary log.
  */
 #undef pr_debug
 #define pr_debug pr_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: enter\n", __func__);
 	complete(&mbhc->btn_press_compl);
@@ -1438,13 +1438,13 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 	struct wcd_mbhc *mbhc = data;
 	int ret;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
  *Add for necessary log.
  */
 #undef pr_debug
 #define pr_debug pr_info
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: enter\n", __func__);
 	WCD_MBHC_RSC_LOCK(mbhc);
@@ -1469,12 +1469,12 @@ static irqreturn_t wcd_mbhc_release_handler(int irq, void *data)
 	 */
 	if (mbhc->mbhc_detection_logic == WCD_DETECTION_LEGACY &&
 		mbhc->current_plug == MBHC_PLUG_TYPE_HEADPHONE) {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13,
 		 *Delete for headset detect.
 		 */
 		wcd_mbhc_find_plug_and_report(mbhc, MBHC_PLUG_TYPE_HEADSET);
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 		goto exit;
 
 	}
@@ -1604,18 +1604,18 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	else if (mbhc->mbhc_cb->hph_pull_up_control)
 		mbhc->mbhc_cb->hph_pull_up_control(codec, I_DEFAULT);
 	else
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/* Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET.1473948, 2020/07/31,
 		 * Modify for improve hp detect when enter water, disable internal
 		 * pull up, use external pull up.
 		 */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HS_L_DET_PULL_UP_CTRL, 3);
-		#else /* OPLUS_ARCH_EXTENDS */
+		#else /* VENDOR_EDIT */
 		{
 			pr_info("%s: default disable pull up for detection\n", __func__);
 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_HS_L_DET_PULL_UP_CTRL, 0);
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 
 	if (mbhc->mbhc_cfg->moisture_en && mbhc->mbhc_cb->mbhc_moisture_config
 		&& !mbhc->mbhc_cfg->moisture_duty_cycle_en)
@@ -1627,14 +1627,14 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	 * by an external source
 	 */
 	if (mbhc->mbhc_cfg->enable_usbc_analog) {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17 Modify for headset jack to NO type*/
 		mbhc->hphl_swh = 0;
 		mbhc->gnd_swh = 0;
 		#else
 		mbhc->hphl_swh = 1;
 		mbhc->gnd_swh = 1;
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 
 		if (mbhc->mbhc_cb->hph_pull_up_control_v2)
 			mbhc->mbhc_cb->hph_pull_up_control_v2(codec,
@@ -1658,7 +1658,7 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	 * when a non-audio accessory is inserted. L_DET_EN sets to 1 when FSA
 	 * I2C driver notifies that ANALOG_AUDIO_ADAPTER is inserted
 	 */
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	if (mbhc->mbhc_cfg->enable_usbc_analog && mbhc->mbhc_cfg->fsa_enable)
 	#else
 	if (mbhc->mbhc_cfg->enable_usbc_analog)
@@ -1671,7 +1671,7 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 		/* Insertion debounce set to 48ms */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 4);
 	} else {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		//RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17 Modify the Debounce to 512ms
 		/* Insertion debounce set to 96ms */
 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_INSREM_DBNC, 6);
@@ -1681,7 +1681,7 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	}
 
 	/* Button Debounce set to 16ms */
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	//RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17 Modify the Debounce to 32ms
 	WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_DBNC, 2);
 	#else
@@ -1695,7 +1695,7 @@ static int wcd_mbhc_initialise(struct wcd_mbhc *mbhc)
 	mbhc->mbhc_cb->mbhc_bias(codec, true);
 	/* enable MBHC clock */
 	if (mbhc->mbhc_cb->clk_setup) {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
 		if (mbhc->mbhc_cfg->enable_usbc_analog &&
 			mbhc->mbhc_cfg->fsa_enable)
 		#else
@@ -1863,7 +1863,7 @@ static int wcd_mbhc_set_keycode(struct wcd_mbhc *mbhc)
 static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 					   unsigned long mode, void *ptr)
 {
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Modify for headset switch (max20328)*/
 	struct wcd_mbhc *mbhc = NULL;
 	pr_err("max20328_state = %d,\n",max20328_state);
@@ -1872,7 +1872,7 @@ static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 	else
 		mbhc = container_of(nb, struct wcd_mbhc, fsa_nb);
 	#endif
-    //#ifndef OPLUS_ARCH_EXTENDS
+    //#ifndef VENDOR_EDIT
     /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 	//struct wcd_mbhc *mbhc = container_of(nb, struct wcd_mbhc, fsa_nb);
 	//#else
@@ -1882,12 +1882,12 @@ static int wcd_mbhc_usbc_ana_event_handler(struct notifier_block *nb,
 	if (!mbhc)
 		return -EINVAL;
 
-	#ifndef OPLUS_ARCH_EXTENDS
+	#ifndef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/08/13, Modify for log*/
 	dev_dbg(mbhc->codec->dev, "%s: mode = %lu\n", __func__, mode);
-	#else /* OPLUS_ARCH_EXTENDS */
+	#else /* VENDOR_EDIT */
 	dev_info(mbhc->codec->dev, "%s: mode = %lu\n", __func__, mode);
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	if (mode == POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER) {
 		if (mbhc->mbhc_cb->clk_setup)
@@ -2126,10 +2126,10 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 	struct snd_soc_codec *codec;
 	struct snd_soc_card *card;
 	const char *usb_c_dt = "qcom,msm-mbhc-usbc-audio-supported";
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Add audio switch max20328*/
 	const char *usb_c_state = "oppo,usbc-switch";
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	if (!mbhc || !mbhc_cfg)
 		return -EINVAL;
@@ -2156,7 +2156,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 		dev_dbg(card->dev,
 			"%s: skipping USB c analog configuration\n", __func__);
 	}
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Add audio switch max20328*/
 	else {
 		if (of_find_property(card->dev->of_node, usb_c_state, NULL)) {
@@ -2169,14 +2169,14 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 					__func__, usb_c_state, mbhc_cfg->switch_type);
 		}
 	}
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	/* Parse fsa switch handle */
 	if (mbhc_cfg->enable_usbc_analog) {
 		dev_dbg(mbhc->codec->dev, "%s: usbc analog enabled\n",
 				__func__);
 		mbhc->swap_thr = GND_MIC_USBC_SWAP_THRESHOLD;
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Add audio switch max20328*/
           	mbhc->fsa_np = of_parse_phandle(card->dev->of_node,
 				"fsa4480-i2c-handle", 0);
@@ -2291,7 +2291,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
 	}
 
 	if (mbhc_cfg->enable_usbc_analog) {
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
         /*RiCheng.Wang@MULTIMEDIA.AUDIODRIVER.DRIVER. 2020/10/17, Add audio switch max20328*/
 		mbhc->fsa_nb.notifier_call = wcd_mbhc_usbc_ana_event_handler;
 		mbhc->fsa_nb.priority = 0;
@@ -2319,7 +2319,7 @@ int wcd_mbhc_start(struct wcd_mbhc *mbhc, struct wcd_mbhc_config *mbhc_cfg)
                         rc = fsa4480_reg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
 
 		}
-		#endif /* OPLUS_ARCH_EXTENDS */
+		#endif /* VENDOR_EDIT */
 	}
 
 	return rc;
@@ -2360,7 +2360,7 @@ void wcd_mbhc_stop(struct wcd_mbhc *mbhc)
 	}
 
 	if (mbhc->mbhc_cfg->enable_usbc_analog){
-		#ifndef OPLUS_ARCH_EXTENDS
+		#ifndef VENDOR_EDIT
         /*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/07/13, Modify for headset switch (max20328)*/
 		if(mbhc->mbhc_cfg->fsa_enable){
 			fsa4480_unreg_notifier(&mbhc->fsa_nb, mbhc->fsa_np);
@@ -2433,13 +2433,13 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 	const char *gnd_switch = "qcom,msm-mbhc-gnd-swh";
 	const char *hs_thre = "qcom,msm-mbhc-hs-mic-max-threshold-mv";
 	const char *hph_thre = "qcom,msm-mbhc-hs-mic-min-threshold-mv";
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/07/31,
 	 *Add for mbhc cross connection.
 	 */
 	u32 cross_conn = 0;
 	const char *mbhc_cross_conn = "oppo,mbhc-check-cross-conn";
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	pr_debug("%s: enter\n", __func__);
 
@@ -2484,7 +2484,7 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 		mbhc->moist_rref = hph_moist_config[2];
 	}
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.HEADSETDET, 2020/07/31,
 	 *Add for mbhc cross connection.
 	 */
@@ -2502,7 +2502,7 @@ int wcd_mbhc_init(struct wcd_mbhc *mbhc, struct snd_soc_codec *codec,
 			mbhc->need_cross_conn = false;
 		}
 	}
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	mbhc->in_swch_irq_handler = false;
 	mbhc->current_plug = MBHC_PLUG_TYPE_NONE;

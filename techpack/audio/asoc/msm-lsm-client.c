@@ -969,7 +969,7 @@ static int msm_lsm_process_params(struct snd_pcm_substream *substream,
 			prtd->lsm_client ? prtd->lsm_client->num_stages : 0);
 		return -EINVAL;
 	}
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 	//Le.Li@MultiMedia.AudioDriver.Codec, 2019/04/02, Add for aispeech wakeup
 	if (p_info != NULL) {
 		switch (p_info->param_type) {

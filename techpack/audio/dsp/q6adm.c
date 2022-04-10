@@ -73,11 +73,11 @@ struct adm_copp {
 	atomic_t channels[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
 	atomic_t app_type[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
 	atomic_t acdb_id[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 	/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 	 * add for RX-to-TX AFE Loopback for AEC path */
 	atomic_t session_type[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	wait_queue_head_t wait[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
 	wait_queue_head_t adm_delay_wait[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
 	atomic_t adm_delay_stat[AFE_MAX_PORTS][MAX_COPPS_PER_PORT];
@@ -287,16 +287,16 @@ static int adm_get_copp_id(int port_idx, int copp_idx)
 	return atomic_read(&this_adm.copp.id[port_idx][copp_idx]);
 }
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
  * add for RX-to-TX AFE Loopback for AEC path */
 static int adm_get_idx_if_copp_exists(int port_idx, int topology, int mode,
 				 int rate, int bit_width, int app_type,
 				 int session_type)
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 static int adm_get_idx_if_copp_exists(int port_idx, int topology, int mode,
 				 int rate, int bit_width, int app_type)
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 {
 	int idx;
 
@@ -310,13 +310,13 @@ static int adm_get_idx_if_copp_exists(int port_idx, int topology, int mode,
 		    (rate == atomic_read(&this_adm.copp.rate[port_idx][idx])) &&
 		    (bit_width ==
 			atomic_read(&this_adm.copp.bit_width[port_idx][idx])) &&
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 			/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 			 * add for RX-to-TX AFE Loopback for AEC path */
 			(session_type ==
 			atomic_read(
 				&this_adm.copp.session_type[port_idx][idx])) &&
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 		    (app_type ==
 			atomic_read(&this_adm.copp.app_type[port_idx][idx])))
 			return idx;
@@ -1553,12 +1553,12 @@ static void adm_reset_data(void)
 			    &this_adm.copp.app_type[i][j], 0);
 			atomic_set(
 			   &this_adm.copp.acdb_id[i][j], 0);
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 			/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 			 * add for RX-to-TX AFE Loopback for AEC path */
 			atomic_set(
 				&this_adm.copp.session_type[i][j], 0);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 			this_adm.copp.adm_status[i][j] =
 				ADM_STATUS_CALIBRATION_REQUIRED;
 		}
@@ -2227,11 +2227,11 @@ static struct cal_block_data *adm_find_cal_by_path(int cal_index, int path)
 
 		if (cal_index == ADM_AUDPROC_CAL ||
 		    cal_index == ADM_LSM_AUDPROC_CAL ||
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 		    cal_index == ADM_LSM_AUDPROC_PERSISTENT_CAL ||
 		    cal_index == ADM_AUDPROC_PERSISTENT_CAL) {
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 			audproc_cal_info = cal_block->cal_info;
 			if ((audproc_cal_info->path == path) &&
 			    (cal_block->cal_data.size > 0))
@@ -2269,11 +2269,11 @@ static struct cal_block_data *adm_find_cal_by_app_type(int cal_index, int path,
 
 		if (cal_index == ADM_AUDPROC_CAL ||
 		    cal_index == ADM_LSM_AUDPROC_CAL ||
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 		    cal_index == ADM_LSM_AUDPROC_PERSISTENT_CAL ||
 		    cal_index == ADM_AUDPROC_PERSISTENT_CAL) {
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 			audproc_cal_info = cal_block->cal_info;
 			if ((audproc_cal_info->path == path) &&
 			    (audproc_cal_info->app_type == app_type) &&
@@ -2314,11 +2314,11 @@ static struct cal_block_data *adm_find_cal(int cal_index, int path,
 
 		if (cal_index == ADM_AUDPROC_CAL ||
 		    cal_index == ADM_LSM_AUDPROC_CAL ||
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 		    cal_index == ADM_LSM_AUDPROC_PERSISTENT_CAL||
 		    cal_index == ADM_AUDPROC_PERSISTENT_CAL) {
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 			audproc_cal_info = cal_block->cal_info;
 			if ((audproc_cal_info->path == path) &&
 			    (audproc_cal_info->app_type == app_type) &&
@@ -2409,12 +2409,12 @@ static void send_adm_cal(int port_id, int copp_idx, int path, int perf_mode,
 	if (passthr_mode != LISTEN) {
 		send_adm_cal_type(ADM_AUDPROC_CAL, path, port_id, copp_idx,
 				perf_mode, app_type, acdb_id, sample_rate);
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 		send_adm_cal_type(ADM_AUDPROC_PERSISTENT_CAL, path,
 				  port_id, copp_idx, perf_mode, app_type,
 				  acdb_id, sample_rate);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	} else {
 		send_adm_cal_type(ADM_LSM_AUDPROC_CAL, path, port_id, copp_idx,
 				  perf_mode, app_type, acdb_id, sample_rate);
@@ -2909,22 +2909,22 @@ static int adm_arrange_mch_ep2_map_v8(
 #define AUDIO_TOPOLOGY_KTV    0x10001080
 #endif /* OPLUS_FEATURE_KTV */
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.PLATFORM.1859584 , 2020/08/14 ,
  *Add for fix lvimfq not support sample_rate issue.
  */
 #define VOICE_TOPOLOGY_LVIMFQ_TX_DM    0x1000BFF5
-#endif /* OPLUS_ARCH_EXTENDS */
-#ifdef OPLUS_ARCH_EXTENDS
+#endif /* VENDOR_EDIT */
+#ifdef VENDOR_EDIT
 /* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
  * add for RX-to-TX AFE Loopback for AEC path */
 int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	     int perf_mode, uint16_t bit_width, int app_type, int acdb_id,
 	     int session_type)
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	     int perf_mode, uint16_t bit_width, int app_type, int acdb_id)
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 {
 	struct adm_cmd_device_open_v5	open;
 	struct adm_cmd_device_open_v6	open_v6;
@@ -3017,7 +3017,7 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			rate = 16000;
 	}
 
-	#ifdef OPLUS_ARCH_EXTENDS
+	#ifdef VENDOR_EDIT
 	/*Suresh.Alla@MULTIMEDIA.AUDIODRIVER.PLATFORM.1859584 , 2020/08/14 ,
 	 *Add for fix lvimfq not support sample_rate issue.
 	 */
@@ -3027,7 +3027,7 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			__func__, rate, topology);
 		rate = 48000;
 	}
-	#endif /* OPLUS_ARCH_EXTENDS */
+	#endif /* VENDOR_EDIT */
 
 	if (topology == FFECNS_TOPOLOGY) {
 		this_adm.ffecns_port_id = port_id;
@@ -3056,19 +3056,19 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	 * This isn't allowed for ULL streams as per the DSP interface
 	 */
 	if (perf_mode != ULTRA_LOW_LATENCY_PCM_MODE)
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 		/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 		 * add for RX-to-TX AFE Loopback for AEC path */
 		copp_idx = adm_get_idx_if_copp_exists(port_idx, topology,
 						      perf_mode,
 						      rate, bit_width,
 						      app_type, session_type);
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 		copp_idx = adm_get_idx_if_copp_exists(port_idx, topology,
 							  perf_mode,
 							  rate, bit_width,
 							  app_type);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 	if (copp_idx < 0) {
 		copp_idx = adm_get_next_available_copp(port_idx);
@@ -3092,12 +3092,12 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			   app_type);
 		atomic_set(&this_adm.copp.acdb_id[port_idx][copp_idx],
 			   acdb_id);
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 		/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 		 * add for RX-to-TX AFE Loopback for AEC path */
 		atomic_set(&this_adm.copp.session_type[port_idx][copp_idx],
 			session_type);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 		set_bit(ADM_STATUS_CALIBRATION_REQUIRED,
 		(void *)&this_adm.copp.adm_status[port_idx][copp_idx]);
 		if ((path != ADM_PATH_COMPRESSED_RX) &&
@@ -3277,18 +3277,18 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			open.endpoint_id_1 = tmp_port;
 			open.endpoint_id_2 = 0xFFFF;
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 			/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 			 * add for RX-to-TX AFE Loopback for AEC path */
 			if (this_adm.ec_ref_rx && (path != 1) &&
 				(afe_get_port_type(tmp_port) == MSM_AFE_PORT_TYPE_TX)) {
 				open.endpoint_id_2 = this_adm.ec_ref_rx;
 			}
-#else /* OPLUS_ARCH_EXTENDS */
+#else /* VENDOR_EDIT */
 			if (this_adm.ec_ref_rx && (path != 1)) {
 				open.endpoint_id_2 = this_adm.ec_ref_rx;
 			}
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 			open.topology_id = topology;
 
@@ -3895,11 +3895,11 @@ int adm_close(int port_id, int perf_mode, int copp_idx)
 		atomic_set(&this_adm.copp.channels[port_idx][copp_idx], 0);
 		atomic_set(&this_adm.copp.bit_width[port_idx][copp_idx], 0);
 		atomic_set(&this_adm.copp.app_type[port_idx][copp_idx], 0);
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 		/* Yongzhi.Zhang@MULTIMEDIA.AUDIODRIVER.PLATFORM, 2019/08/01,
 		 * add for RX-to-TX AFE Loopback for AEC path */
 		atomic_set(&this_adm.copp.session_type[port_idx][copp_idx], 0);
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 
 		clear_bit(ADM_STATUS_CALIBRATION_REQUIRED,
 			(void *)&this_adm.copp.adm_status[port_idx][copp_idx]);
@@ -4135,12 +4135,12 @@ static int get_cal_type_index(int32_t cal_type)
 	case ADM_LSM_AUDPROC_PERSISTENT_CAL_TYPE:
 		ret = ADM_LSM_AUDPROC_PERSISTENT_CAL;
 		break;
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 	case ADM_AUDPROC_PERSISTENT_CAL_TYPE:
 		ret = ADM_AUDPROC_PERSISTENT_CAL;
 		break;
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	default:
 		pr_err("%s: invalid cal type %d!\n", __func__, cal_type);
 	}
@@ -4369,14 +4369,14 @@ static int adm_init_cal_data(void)
 		 {adm_map_cal_data, adm_unmap_cal_data,
 		  cal_utils_match_buf_num} },
 
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 		{{ADM_AUDPROC_PERSISTENT_CAL_TYPE,
 		 {adm_alloc_cal, adm_dealloc_cal, NULL,
 		  adm_set_cal, NULL, NULL} },
 		 {adm_map_cal_data, adm_unmap_cal_data,
 		  cal_utils_match_buf_num} },
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	};
 	pr_debug("%s:\n", __func__);
 
@@ -4943,7 +4943,7 @@ int adm_store_cal_data(int port_id, int copp_idx, int path, int perf_mode,
 			rc = -ENOMEM;
 			goto unlock;
 		}
-#ifdef OPLUS_ARCH_EXTENDS
+#ifdef VENDOR_EDIT
 /*Zhixiong Zhang@MULTIMEDIA.AUDIODRIVER.ADSP.354056, 2020/09/08, CR 2663827 fix voicecall tx mute issue*/
 	} else if (cal_index == ADM_AUDPROC_PERSISTENT_CAL) {
 		if (cal_block->cal_data.size > AUD_PROC_PERSIST_BLOCK_SIZE) {
@@ -4953,7 +4953,7 @@ int adm_store_cal_data(int port_id, int copp_idx, int path, int perf_mode,
 			goto unlock;
 		}
 	}
-#endif /* OPLUS_ARCH_EXTENDS */
+#endif /* VENDOR_EDIT */
 	else if (cal_index == ADM_AUDVOL_CAL) {
 		if (cal_block->cal_data.size > AUD_VOL_BLOCK_SIZE) {
 			pr_err("%s:aud_vol:invalid size exp/actual[%zd, %d]\n",
