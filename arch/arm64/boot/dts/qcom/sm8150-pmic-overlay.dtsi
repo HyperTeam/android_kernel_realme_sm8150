@@ -352,7 +352,7 @@
 
 	mp2650-charger@5c {
 		status = "okay";
-		compatible = "oplus,mp2650-charger";
+		compatible = "oppo,mp2650-charger";
 		reg = <0x5c 0>;
 
 		qcom,mps_otg_en-gpio = <&pm8150_gpios 4 0x00>;
@@ -410,18 +410,18 @@
 //#ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2018/04/20 for SVOOC
 	//bq25882-charger@6b {
 	//	status = "okay";
-	//	compatible = "oplus,bq25882-charger";
+	//	compatible = "oppo,bq25882-charger";
 	//	reg = <0x6b 0>;
 	//};
 	da9313-divider@68 {
 		status = "okay";
-		compatible = "oplus,da9313-divider";
+		compatible = "oppo,da9313-divider";
 		reg = <0x68 0>;
 	};
 //#endif /*VENDOR_EDIT*/
 	bq27541-battery@55 {
 		status = "okay";
-		compatible = "oplus,bq27541-battery";
+		compatible = "oppo,bq27541-battery";
 		reg = <0x55>;
 		qcom,modify-soc-smooth;
 		qcom,batt_bq28z610;
@@ -430,14 +430,14 @@
 
 	oplus_short-ic@58 {
 		status = "okay";
-		compatible = "oplus,oplus_short-ic";
+		compatible = "oppo,oplus_short-ic";
 		reg = <0x58>;
 		qcom,modify-soc-smooth;
 	};
 
 	stm8s_fastcg@26{
 		status = "okay";
-		compatible = "oplus,stm8s-fastcg";
+		compatible = "oppo,stm8s-fastcg";
 		reg = <0x26>;
 		qcom,vooc-low-temp = <120>;
 		qcom,oplus_batt_4400mv;
