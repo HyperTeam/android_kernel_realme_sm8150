@@ -2902,13 +2902,6 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 	}
 
 	if ((topology == VPM_TX_SM_ECNS_V2_COPP_TOPOLOGY) ||
-	    #ifdef VENDOR_EDIT
-	    /* Zhao.Pan@PSW.MM.AudioDriver.Machine, 2019/01/31
-	     * the topology only support 8/16/32/48K, other sample rate change to 16K */
-	    (topology == VPM_TX_SM_LVVEFQ_COPP_TOPOLOGY) ||
-	    (topology == VPM_TX_DM_LVVEFQ_COPP_TOPOLOGY) ||
-	    (topology == VPM_TX_QM_LVVEFQ_COPP_TOPOLOGY) ||
-	    #endif //VENDOR_EDIT
 	    (topology == VPM_TX_DM_FLUENCE_EF_COPP_TOPOLOGY)) {
 		if ((rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_8K) &&
 		    (rate != ADM_CMD_COPP_OPEN_SAMPLE_RATE_16K) &&
