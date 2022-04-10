@@ -26,4 +26,3 @@ obj-$(CONFIG_ARCH_ZX)		+= zte/
 #ifdef VENDOR_EDIT//Fanhong.Kong@ProDrv.CHG,add 2014/10/25 for oppo
 obj-$(CONFIG_OPPO_ARCH_FILE)	+= oppo/
 #endif//VENDOR_EDIT
-obj-y                     += oplus/sensor/
