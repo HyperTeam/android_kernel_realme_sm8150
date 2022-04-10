@@ -147,6 +147,7 @@ unsigned char get_Machine_Type(void);
 int get_eng_version(void);
 bool is_confidential(void);
 bool oppo_daily_build(void);
+unsigned int get_serialID(void);
 #else
 unsigned int init_project_version(void) { return 0;}
 unsigned int get_project(void) { return 0;}
@@ -158,5 +159,6 @@ unsigned char get_Machine_Type(void) {return 0;}
 int get_eng_version(void) { return 0;}
 bool is_confidential(void) { return true;}
 bool oppo_daily_build(void) { return false;}
+void get_serialID(char *serialno);
 #endif
 #endif  /*_OPPO_PROJECT_H_*/
