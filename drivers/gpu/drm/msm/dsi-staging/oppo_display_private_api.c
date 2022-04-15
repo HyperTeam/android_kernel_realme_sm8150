@@ -21,6 +21,8 @@
 //#include <linux/oppo_mm_kevent_fb.h>
 #include <soc/oppo/oppo_project.h>
 
+#include "../../../../../drivers/input/oppo_fp_drivers/include/oppo_fp_common.h"
+
 int hdr10_mode = 0;
 int hbm_mode = 0;
 int seed_mode = 0;
@@ -32,6 +34,8 @@ int oppo_request_power_status = OPPO_DISPLAY_POWER_ON;
 extern int oppo_dc2_alpha;
 extern int oppo_underbrightness_alpha;
 extern int msm_drm_notifier_call_chain(unsigned long val, void *v);
+
+struct fp_underscreen_info fp_state = {0};
 
 #define PANEL_TX_MAX_BUF 256
 #define PANEL_CMD_MIN_TX_COUNT 2
@@ -2363,6 +2367,12 @@ static ssize_t oppo_display_set_hdr10_mode(struct device *dev,
 	return count;
 }
 
+static ssize_t oppo_display_get_fp_state(struct device *obj,
+	struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d,%d,%d\n", fp_state.x, fp_state.y, fp_state.touch_state);
+}
+
 static struct kobject *oppo_display_kobj;
 
 static DEVICE_ATTR(aod, S_IRUGO|S_IWUSR, NULL, oppo_display_set_aod);
@@ -2392,6 +2402,7 @@ static DEVICE_ATTR(notify_fppress, S_IRUGO|S_IWUSR, NULL, oppo_display_notify_fp
 static DEVICE_ATTR(aod_light_mode_set, S_IRUGO|S_IWUSR, oppo_get_aod_light_mode, oppo_set_aod_light_mode);
 static DEVICE_ATTR(hdr10, S_IRUGO|S_IWUSR, oppo_display_get_hdr10_mode, oppo_display_set_hdr10_mode);
 static DEVICE_ATTR(serial_number, S_IRUGO|S_IWUSR, oppo_display_get_serial_number, NULL);
+static DEVICE_ATTR(fp_state, S_IRUGO, oppo_display_get_fp_state, NULL);
 
 /*
  * Create a group of attributes so that we can create and destroy them all
@@ -2425,6 +2436,7 @@ static struct attribute *oppo_display_attrs[] = {
 	&dev_attr_aod_light_mode_set.attr,
 	&dev_attr_hdr10.attr,
 	&dev_attr_serial_number.attr,
+	&dev_attr_fp_state.attr,
 	NULL,	/* need to NULL terminate the list of attributes */
 };
 
@@ -2445,6 +2457,14 @@ int oppo_display_get_resolution(unsigned int *xres, unsigned int *yres)
 	return 0;
 }
 EXPORT_SYMBOL(oppo_display_get_resolution);
+
+static int oppo_opticalfp_irq_handler(struct fp_underscreen_info *tp_info) {
+	fp_state.x = tp_info->x;
+	fp_state.y = tp_info->y;
+	fp_state.touch_state = tp_info->touch_state;
+	sysfs_notify(kernel_kobj, "oppo_display", dev_attr_fp_state.attr.name);
+	return IRQ_HANDLED;
+}
 
 static int __init oppo_display_private_api_init(void)
 {
@@ -2472,6 +2492,12 @@ static int __init oppo_display_private_api_init(void)
 	kthread_init_work(&oppo_ffl_work, &oppo_ffl_setting_thread);
 	oppo_ffl_thread = kthread_run(kthread_worker_fn,
 				      &oppo_ffl_worker, "oppo_ffl");
+
+	opticalfp_irq_handler_register(oppo_opticalfp_irq_handler);
+
+	if (retval) {
+		goto error_remove_sysfs_group;
+	}
 
 	return 0;
 
