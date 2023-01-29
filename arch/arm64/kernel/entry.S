@@ -152,7 +152,6 @@ alternative_else_nop_endif
 	tbnz	\tmp2, #TIF_SSBD, \targ
 	mov	w0, #ARM_SMCCC_ARCH_WORKAROUND_2
 	mov	w1, #\state
-	smc	#0
 #endif
 	.endm
 
