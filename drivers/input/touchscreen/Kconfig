@@ -1296,8 +1296,11 @@ config TOUCHSCREEN_RAYDIUM_CHIPSET
 
 	  If unsure, say N.
 
+source "drivers/input/touchscreen/focaltech_touch/Kconfig"
+
 #ifdef VENDOR_EDIT
 #Wanghao@Bsp.group.Tp,2017-09-20,Added for common touchpanel driver 
 source "drivers/input/touchscreen/oppo_touchscreen/Kconfig"
 #endif
+
 endif
