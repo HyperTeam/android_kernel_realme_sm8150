@@ -2317,6 +2317,7 @@ static int mv88e6xxx_mdios_register(struct mv88e6xxx_chip *chip,
 	 */
 	child = of_get_child_by_name(np, "mdio");
 	err = mv88e6xxx_mdio_register(chip, child, false);
+	of_node_put(child);
 	if (err)
 		return err;
 
@@ -4059,7 +4060,7 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 		}
 	}
 	if (chip->reset)
-		usleep_range(1000, 2000);
+		usleep_range(10000, 20000);
 
 	err = mv88e6xxx_mdios_register(chip, np);
 	if (err)
