@@ -153,9 +153,6 @@ __attribute__((weak)) void release_algorithm_points(struct touchpanel_data *ts)
 
 
 
-bool ambient_display_status(void){
-    return device_is_dozing();
-}
 
 /*******Part3:Function  Area********************************/
 /**
@@ -2083,24 +2080,6 @@ static const struct file_operations proc_glove_control_fops = {
     .write = proc_glove_control_write,
     .read =  proc_glove_control_read,
     .open = simple_open,
-    .owner = THIS_MODULE,
-};
-
-static ssize_t proc_is_dozing_rn(struct file *file, char __user *user_buf, size_t count, loff_t *ppos)
-{
-    int ret = 0;
-    char page[PAGESIZE] = {0};
-    if (ambient_display_status())
-        snprintf(page, PAGESIZE-1, "%s", "1\n");
-    else
-        snprintf(page, PAGESIZE-1, "%s", "0\n");
-    ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page));
-    return ret;
-}
-
-static const struct file_operations proc_is_dozing_rn_fops = {
-    .read  = proc_is_dozing_rn,
-    .open  = simple_open,
     .owner = THIS_MODULE,
 };
 
@@ -4193,12 +4172,6 @@ static int init_touchpanel_proc(struct touchpanel_data *ts)
                 TPD_INFO("%s: Couldn't create proc entry, %d\n", __func__, __LINE__);
             }
         }
-    }
-
-    prEntry_tmp = proc_create_data("DOZE_STATUS", 0444, prEntry_tp, &proc_is_dozing_rn_fops, ts);
-    if (prEntry_tmp == NULL) {
-        ret = -ENOMEM;
-        TPD_INFO("%s: Couldn't create proc entry, %d\n", __func__, __LINE__);
     }
 
     //proc files-step2-5:/proc/touchpanel/glove_mode_enable (Glove mode related interface)
