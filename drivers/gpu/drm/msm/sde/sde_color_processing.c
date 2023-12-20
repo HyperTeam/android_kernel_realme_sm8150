@@ -641,7 +641,9 @@ extern bool is_dsi_panel(struct drm_crtc *crtc);
 
 bool is_skip_pcc(struct drm_crtc *crtc)
 {
-	if (sde_crtc_get_fingerprint_pressed(crtc->state))
+	if (OPPO_DISPLAY_POWER_DOZE_SUSPEND == get_oppo_display_power_status() ||
+	    OPPO_DISPLAY_POWER_DOZE == get_oppo_display_power_status() ||
+	    sde_crtc_get_fingerprint_pressed(crtc->state))
 		return true;
 
 	return false;
