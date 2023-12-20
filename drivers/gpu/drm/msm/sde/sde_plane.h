@@ -158,10 +158,6 @@ struct sde_plane_state {
 	bool const_alpha_en;
 	bool pending;
 	bool defer_prepare_fb;
-	#ifdef VENDOR_EDIT
-	/*Mark.Yao@PSW.MM.Display.LCD.Stable,2019-01-12 add is_skip check */
-	bool is_skip;
-	#endif /* VENDOR_EDIT */
 	uint32_t pipe_order_flags;
 
 	/* scaler configuration */
@@ -310,13 +306,6 @@ int sde_plane_validate_multirect_v2(struct sde_multirect_plane_states *plane);
  * @drm_state: Pointer to DRM plane state
  */
 void sde_plane_clear_multirect(const struct drm_plane_state *drm_state);
-
-#ifdef VENDOR_EDIT
-/* Gou shengjun@PSW.MM.Display.Service.Feature,2018/11/21
- * For OnScreenFingerprint feature
-*/
-int sde_plane_check_fingerprint_layer(const struct drm_plane_state *drm_state);
-#endif
 
 /**
  * sde_plane_validate_src_addr - validate if current sspp addr of given
