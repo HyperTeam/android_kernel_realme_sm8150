@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1094,7 +1094,6 @@ bool cal_utils_is_cal_stale(struct cal_block_data *cal_block)
 		pr_err("%s: cal_block is Null", __func__);
 		goto unlock;
 	}
-
 	if (cal_block->cal_stale)
 	    ret = true;
 
