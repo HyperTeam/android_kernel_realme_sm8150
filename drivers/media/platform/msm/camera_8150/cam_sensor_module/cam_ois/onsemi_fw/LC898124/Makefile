@@ -11,4 +11,4 @@ ccflags-y += -Idrivers/media/platform/msm/camera_8150/cam_smmu/
 ccflags-y += -Idrivers/media/platform/msm/camera_8150/cam_core
 ccflags-y += -Idrivers/media/platform/msm/camera_8150/cam_sensor_module/cam_ois/
 
-obj-$(CONFIG_SPECTRA_CAMERA) += HighLevelCmd.o DownloadCmd.o E2PromCmd.o
+obj-$(CONFIG_SPECTRA_CAMERA) += DownloadCmd.o
