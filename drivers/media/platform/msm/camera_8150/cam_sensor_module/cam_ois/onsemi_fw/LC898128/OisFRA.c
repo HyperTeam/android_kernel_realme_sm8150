@@ -261,11 +261,11 @@ TRACE("0x%08X, 0x%08X, 0x%08X, 0x%08X,\n", C0, S0, CN, SN);
 // Explanation		: Convert Frequency
 // History			: First edition
 //********************************************************************************
-UINT_32	Freq_Convert( int SfFreq )
+UINT_32	Freq_Convert( float SfFreq )
 {
 	UINT_32	UlPhsStep;
 	
-	UlPhsStep	= ( UINT_32 )( ( SfFreq * ( int )0x100000000 / FS_FREQ + (1/2) ) / 2 ) ;
+	UlPhsStep	= ( UINT_32 )( ( SfFreq * ( float )0x100000000 / FS_FREQ + 0.5F ) / 2.0F ) ;
 
 	return( UlPhsStep ) ;
 }
@@ -280,7 +280,7 @@ UINT_32	Freq_Convert( int SfFreq )
 //********************************************************************************
 void	MesStart_FRA_Single( UINT_8	UcDirSel )
 {
-	int			SfTmp ;
+	float			SfTmp ;
 	INT_32	GainQ23, PhaseQ21 ;
 	UINT_32	UlReadVal ;	
 
@@ -289,7 +289,7 @@ void	MesStart_FRA_Single( UINT_8	UcDirSel )
 	RamWrite32A( SinWave_Offset,	Freq_Convert( StFRAParam.StHostCom.SfFrqCom.SfFltVal ) ) ;		// Freq Setting = Freq * 80000000h / Fs	: 10Hz
 
 	SfTmp	= StFRAParam.StHostCom.SfAmpCom.SfFltVal / 1400.0F ;									// AVDD 2800mV / 2 = 1400mV
-	RamWrite32A( SinWave_Gain,		( UINT_32 )( ( int )0x7FFFFFFF * SfTmp ) ) ;					// Set Sine Wave Gain
+	RamWrite32A( SinWave_Gain,		( UINT_32 )( ( float )0x7FFFFFFF * SfTmp ) ) ;					// Set Sine Wave Gain
 
 	if ( StFRAParam.StHostCom.UcAvgCycl == 10) 	{  		// Actuator Through
 #ifdef ACT_THROUGH_CLOSE
@@ -361,8 +361,8 @@ void	MesStart_FRA_Single( UINT_8	UcDirSel )
 	// Read answer
 	RamRead32A( FRA_DMA_Gain	, &GainQ23 ) ;		// Gain
 	RamRead32A( FRA_DMA_Phase	, &PhaseQ21 ) ;		// Phase
-	StFRAParam.StMesRslt.SfGainAvg = (int)GainQ23 / Q23; //0x007FFFFF;
-	StFRAParam.StMesRslt.SfPhaseAvg = (int)PhaseQ21 / Q21; //0x001FFFFF;	
+	StFRAParam.StMesRslt.SfGainAvg = (float)GainQ23 / Q23; //0x007FFFFF;
+	StFRAParam.StMesRslt.SfPhaseAvg = (float)PhaseQ21 / Q21; //0x001FFFFF;	
 
 	TRACE("Phase %f deg : Gain %f dB\n", StFRAParam.StMesRslt.SfPhaseAvg, StFRAParam.StMesRslt.SfGainAvg );
 }
@@ -400,8 +400,8 @@ void	MesStart_FRA_Continue( void )
 	// Read answer
 	RamRead32A( FRA_DMA_Gain	, &GainQ23 ) ;		// Gain
 	RamRead32A( FRA_DMA_Phase	, &PhaseQ21 ) ;		// Phase
-	StFRAParam.StMesRslt.SfGainAvg = (int)GainQ23 / Q23;
-	StFRAParam.StMesRslt.SfPhaseAvg = (int)PhaseQ21 / Q21;	
+	StFRAParam.StMesRslt.SfGainAvg = (float)GainQ23 / Q23;
+	StFRAParam.StMesRslt.SfPhaseAvg = (float)PhaseQ21 / Q21;	
 
 	TRACE("Phase %f deg : Gain %f dB\n", StFRAParam.StMesRslt.SfPhaseAvg, StFRAParam.StMesRslt.SfGainAvg );
 }

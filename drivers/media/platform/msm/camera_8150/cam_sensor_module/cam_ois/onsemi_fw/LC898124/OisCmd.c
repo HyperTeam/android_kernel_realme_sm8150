@@ -880,7 +880,7 @@ TRACE("	No = %04d", UcTmeOut ) ;
 void TneBia( UnDwdVal StTneVal, UINT8 UcTneAxs, UINT16 UsHalAdjRange, UINT8 UcSrvSwitch  )
 {
 	UINT32			UlSetBia, UlOldBias ;
-	int			SfAmp ;
+	float			SfAmp ;
 
 TRACE("TneBia\n " ) ;
 	if( UcTneAxs == X_DIR ) {
@@ -904,9 +904,9 @@ TRACE("		UlSetBia = %08x\n ", (unsigned int)UlSetBia ) ;
 #else		
 		if( UcSrvSwitch != OFF ) {
 #endif
-			SfAmp	= ( ( int )UlSetBia / ( int )UlOldBias - 1.0f ) ;
+			SfAmp	= ( ( float )UlSetBia / ( float )UlOldBias - 1.0f ) ;
 			SfAmp	= ( SfAmp / 2.0f ) + 1.0f ;
-			UlSetBia	= ( UINT32 )( ( int )UlOldBias * SfAmp ) ;
+			UlSetBia	= ( UINT32 )( ( float )UlOldBias * SfAmp ) ;
 		}
 		if( UlSetBia > (UINT32)0x0000FFFF )		UlSetBia = 0x0000FFFF ;
 		UlSetBia = ( UlSetBia << 16 ) ;
@@ -1486,8 +1486,8 @@ UINT16	TneADO( )
 	    if ((0x7FFF - abs(y_min)) < abs(y_off)) y_min_after = 0x8001 ;
 	}
 
-	gout_x = (INT16)((INT32)(((int)gxgain / 0x7FFFFFFF) * limit * 4) >> 16);
-	gout_y = (INT16)((INT32)(((int)gygain / 0x7FFFFFFF) * limit * 4) >> 16);
+	gout_x = (INT16)((INT32)(((float)gxgain / 0x7FFFFFFF) * limit * 4) >> 16);
+	gout_y = (INT16)((INT32)(((float)gygain / 0x7FFFFFFF) * limit * 4) >> 16);
 
 //TRACE( "ADOFF X\t=\t0x%04X\r\n", x_off ) ;
 //TRACE( "ADOFF Y\t=\t0x%04X\r\n", y_off ) ;
@@ -1561,16 +1561,16 @@ UINT16	TneADO( )
 	// *******************************
 	if (UsSts == 0) {
 		UINT16 UsReadVal ;
-		int flDistanceX, flDistanceY ;
-		int flDistanceAD = SLT_OFFSET * 6 ;
+		float flDistanceX, flDistanceY ;
+		float flDistanceAD = SLT_OFFSET * 6 ;
 
 		// effective range check
 		_GET_UINT16( UsReadVal,	DISTANCE_X	) ;
-		flDistanceX = (int)UsReadVal / 10.0f ;
+		flDistanceX = (float)UsReadVal / 10.0f ;
 //TRACE("DISTANCE (X, Y) pixel = (%04X", UsReadVal );
 
 		_GET_UINT16( UsReadVal,	DISTANCE_Y	) ;
-		flDistanceY = (int)UsReadVal / 10.0f ;
+		flDistanceY = (float)UsReadVal / 10.0f ;
 //TRACE(", %04X)\r\n", UsReadVal );
 
 //TRACE("DISTANCE (X, Y) pixel = (%x, %x)\r\n", (int)(flDistanceX * 10.0), (int)(flDistanceY * 10.0) );
@@ -1673,7 +1673,7 @@ UINT8 FrqDet( void )
 // History			: First edition
 //********************************************************************************
 #define 	ZERO_SERVO_NUM		4096				// 4096times
-UINT32	TneZeroServo( UINT8 ucposture , int DegreeGap )
+UINT32	TneZeroServo( UINT8 ucposture , float DegreeGap )
 {
 	UINT32			UlRsltSts;
 	INT32			SlMeasureParameterA , SlMeasureParameterB ;
@@ -1814,8 +1814,8 @@ TRACE("VAL(H,A) pos = \t%08xh\t%08xh\t%d \n",(int)SlMeasureAveValueA, (int)SlMea
 
 
 				
-				StZeroServoX.SlGaina = (INT32)( (int)StZeroServoMesX.SlHallP / cos( OffsetAngle ) ) ;
-				StZeroServoY.SlGaina = (INT32)( (int)StZeroServoMesY.SlHallP / cos( OffsetAngle ) ) ;
+				StZeroServoX.SlGaina = (INT32)( (float)StZeroServoMesX.SlHallP / cos( OffsetAngle ) ) ;
+				StZeroServoY.SlGaina = (INT32)( (float)StZeroServoMesY.SlHallP / cos( OffsetAngle ) ) ;
 				
 TRACE("   X    ,   Y    ,   angle = %f \n", DegreeGap ) ;
 TRACE("%08xh,%08xh(Offset)\n",(int)StZeroServoX.SlOffset, (int)StZeroServoY.SlOffset) ;
@@ -1962,7 +1962,7 @@ UINT32	TneAvc( UINT8 ucposture )
 	UINT8			j , k;
 //	UINT8			i , j , k;
 //	INT32			mtrx[9] , imtrx[9];
-//	int			detA;
+//	float			detA;
 	INT32			SlDiff[3] ;
 
 	UlRsltSts = EXE_END ;
@@ -2361,7 +2361,7 @@ UINT8	CircleTest( UINT8 uc_freq, UINT8 us_amp )
 	// Measurement initialize
 	MesFil124( NOISE ) ;
 	
-	sl_sample_num	= ( INT32 )( FS_FREQ / ( int )uc_freq ) ;
+	sl_sample_num	= ( INT32 )( FS_FREQ / ( float )uc_freq ) ;
 	
 	// Start peak to peak measurement
 	MeasureStart124( sl_sample_num, HALL_RAM_HXOUT0, HALL_RAM_HYOUT0 ) ;

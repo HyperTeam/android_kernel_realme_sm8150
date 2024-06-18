@@ -1005,7 +1005,7 @@ UINT8	WrHallLnData(  UINT8 UcMode, mlLinearityValue *linval )
 	UINT32 UlReadVal, UlCnt;
 	UINT8 ans, data[CHECK_SUM_NUM], cnt, UcReadVal[2];
 	UINT32 ReadVerify, Parity;
-	int		*pPosX, *pPosY;
+	double		*pPosX, *pPosY;
 	UINT32	PosDifX, PosDifY;
 	DSPVER Info;
 	

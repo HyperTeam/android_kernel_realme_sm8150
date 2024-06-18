@@ -267,9 +267,9 @@ union	ULLNVAL {
 } ;
 
 
-// int Data Union
+// Float Data Union
 union	FLTVAL {
-	int	SfFltVal ;
+	float	SfFltVal ;
 	UINT_32	UlLngVal ;
 	UINT_16	UsDwdVal[ 2 ] ;
 	struct {
@@ -321,9 +321,9 @@ union	ULLNVAL {
 typedef union ULLNVAL	UnllnVal;
 
 
-// int Data Union
+// Float Data Union
 union	FLTVAL {
-	int	SfFltVal ;
+	float	SfFltVal ;
 	UINT_32	UlLngVal ;
 	UINT_16	UsDwdVal[ 2 ] ;
 	struct {

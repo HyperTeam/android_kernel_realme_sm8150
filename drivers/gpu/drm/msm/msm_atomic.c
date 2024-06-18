@@ -73,23 +73,20 @@ EXPORT_SYMBOL(msm_drm_unregister_client);
  * @v: notifier data, inculde display id and display blank
  *     event(unblank or power down).
  */
-static bool notifier_enabled __read_mostly = true;
+#ifndef OPLUS_BUG_STABILITY
+static int msm_drm_notifier_call_chain(unsigned long val, void *v)
+{
+	return blocking_notifier_call_chain(&msm_drm_notifier_list, val,
+					    v);
+}
+#else /*OPLUS_BUG_STABILITY*/
 int msm_drm_notifier_call_chain(unsigned long val, void *v)
 {
-	if (unlikely(!notifier_enabled))
-		return 0;
-
 	return blocking_notifier_call_chain(&msm_drm_notifier_list, val,
 					    v);
 }
 EXPORT_SYMBOL(msm_drm_notifier_call_chain);
-
-void msm_drm_notifier_enable(bool val)
-{
-	notifier_enabled = val;
-	mb();
-}
-EXPORT_SYMBOL(msm_drm_notifier_enable);
+#endif /*OPLUS_BUG_STABILITY*/
 
 /* block until specified crtcs are no longer pending update, and
  * atomically mark them as pending update
@@ -276,10 +273,8 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			notifier_data.data = &blank;
 			notifier_data.id = crtc_idx;
 			#ifndef OPLUS_BUG_STABILITY
-			/*Sachin @PSW.MM.Display.LCD.Stable, 2020/04/09, Add for
-			 remove original drm notify for bug 12684 */
-				msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
-			     &notifier_data);
+			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
+						     &notifier_data);
 			#endif /* OPLUS_BUG_STABILITY */
 		}
 		/*
@@ -301,8 +296,6 @@ msm_disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
 			connector->state->crtc->state->active_changed) {
 			DRM_DEBUG_ATOMIC("Notify blank\n");
 			#ifndef OPLUS_BUG_STABILITY
-			/* Saching@PSW.MM.Display.LCD.Stable, 2020/04/09, Add for
-			 remove original drm notify for bug 12684 */
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
 						&notifier_data);
 			#endif /* OPLUS_BUG_STABILITY */
@@ -523,10 +516,8 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 				connector->state->crtc->index;
 			DRM_DEBUG_ATOMIC("Notify early unblank\n");
 			#ifndef OPLUS_BUG_STABILITY
-			/* Sachin@PSW.MM.Display.LCD.Stable, 2020/04/09, Add for
-			 remove original drm notify for bug 12684 */
 			msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK,
-			     &notifier_data);
+					    &notifier_data);
 			#endif /* OPLUS_BUG_STABILITY */
 		}
 		/*
@@ -582,10 +573,8 @@ static void msm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
 			connector->state->crtc->state->active_changed)) {
 			DRM_DEBUG_ATOMIC("Notify unblank\n");
 			#ifndef OPLUS_BUG_STABILITY
-			/*Sachin @PSW.MM.Display.LCD.Stable, 2020/04/09, Add for
-			remove original drm notify for bug 12684 */
 			msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK,
-						&notifier_data);
+					    &notifier_data);
 			#endif /* OPLUS_BUG_STABILITY */
 		}
 	}

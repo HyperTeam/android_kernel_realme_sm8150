@@ -21,8 +21,8 @@ extern UINT_8	FlashMultiRead( UINT_8 , UINT_32 , UINT_32 * , UINT_8 );
 /* Raw data buffers */	
 //Dual_Axis_t xy_raw_data[360/DEGSTEP + 1];
 //Dual_Axis_t xy_raw_data[360/3 + 1];
-//int xMaxAcc, yMaxAcc;
-//int xLimit, yLimit;
+//float xMaxAcc, yMaxAcc;
+//float xLimit, yLimit;
 #if 0
 #define		ANGLE_LIMIT	0.105929591F
 #define		LIMIT_RANGE	190.0F
@@ -52,27 +52,27 @@ extern UINT_8	FlashMultiRead( UINT_8 , UINT_32 , UINT_32 * , UINT_8 );
 #define		HallX_hs			0x81F8
 #define		HallY_hs			0x8200
 
-static int fix2float(unsigned int fix)
+static float fix2float(unsigned int fix)
 {
     if((fix & 0x80000000) > 0)
     {
-        return ((int)fix-(int)0x100000000)/(int)0x7FFFFFFF;
+        return ((float)fix-(float)0x100000000)/(float)0x7FFFFFFF;
     } else {
-        return (int)fix/(int)0x7FFFFFFF;
+        return (float)fix/(float)0x7FFFFFFF;
     }
 }
 
-static unsigned int int2fix(int f)
+static unsigned int float2fix(float f)
 {
     if(f < 0)
     {
-        return (unsigned int)(f * (int)0x7FFFFFFF + 0x100000000);
+        return (unsigned int)(f * (float)0x7FFFFFFF + 0x100000000);
     } else {
-        return (unsigned int)(f * (int)0x7FFFFFFF);
+        return (unsigned int)(f * (float)0x7FFFFFFF);
     }
 }
 
-void LoopGainSet(unsigned char flag, int db)
+void LoopGainSet(unsigned char flag, float db)
 {
     static UINT_32 xHs, yHs;
     static UINT_32 xLpGan, yLpGan;
@@ -91,8 +91,8 @@ void LoopGainSet(unsigned char flag, int db)
 	    RamRead32A(HallFilterCoeffX_hxgain1, &xLpGan);
 	    RamRead32A(HallFilterCoeffY_hygain1, &yLpGan);
 
-		RamWrite32A(HallFilterCoeffX_hxgain1, int2fix( fix2float(xLpGan) * db / 2));	// gain1 /2
-    	RamWrite32A(HallFilterCoeffY_hygain1, int2fix( fix2float(xLpGan) * db / 2));  // gain1 /2
+		RamWrite32A(HallFilterCoeffX_hxgain1, float2fix( fix2float(xLpGan) * db / 2));	// gain1 /2
+    	RamWrite32A(HallFilterCoeffY_hygain1, float2fix( fix2float(xLpGan) * db / 2));  // gain1 /2
 
     } else { //	0:Restore
 
@@ -115,14 +115,14 @@ void LoopGainSet(unsigned char flag, int db)
 --------------------------------------------------------------------*/
 //unsigned short Accuracy()
 #if 0
-unsigned short Accuracy(int ACCURACY, unsigned short RADIUS, unsigned short DEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
+unsigned short Accuracy(float ACCURACY, unsigned short RADIUS, unsigned short DEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	unsigned int xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     unsigned short xng = 0, yng = 0;
     unsigned short deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
 	unsigned int xGyrogain, yGyrogain;
     unsigned int xGLenz, yGLenz;
     unsigned int xG2x4xb, yG2x4xb;
@@ -164,16 +164,16 @@ unsigned short Accuracy(int ACCURACY, unsigned short RADIUS, unsigned short DEGS
 	// Circle check
 	xpos = xRadius * cos(0);
 	ypos = yRadius * sin(0);
-	RamWrite32A(HALL_RAM_HXOFF1, int2fix(xpos));
-	RamWrite32A(HALL_RAM_HYOFF1, int2fix(ypos));
+	RamWrite32A(HALL_RAM_HXOFF1, float2fix(xpos));
+	RamWrite32A(HALL_RAM_HYOFF1, float2fix(ypos));
 	WitTim(WAIT_MSEC1);
 
 	for( deg = 0; deg <= 360; deg += DEGSTEP ) // 0-360 degree
 	{
 		xpos = xRadius * cos(deg * PI/180);
 		ypos = yRadius * sin(deg * PI/180);
-    	RamWrite32A(HALL_RAM_HXOFF1, int2fix(xpos));
-		RamWrite32A(HALL_RAM_HYOFF1, int2fix(ypos));
+    	RamWrite32A(HALL_RAM_HXOFF1, float2fix(xpos));
+		RamWrite32A(HALL_RAM_HYOFF1, float2fix(ypos));
 
 		xMaxHall = 0;
 		yMaxHall = 0;
@@ -211,12 +211,12 @@ unsigned short Accuracy(int ACCURACY, unsigned short RADIUS, unsigned short DEGS
 #endif
 unsigned short Accuracy()
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	UINT_32 xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     unsigned short xng = 0, yng = 0;
     unsigned short deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
     UINT_32 xGyroLimit, yGyroLimit;
 	UINT_32 xGyrogain, yGyrogain;
     UINT_32 xGLenz, yGLenz;
@@ -260,16 +260,16 @@ unsigned short Accuracy()
 	// Circle check
 //	xpos = xRadius * cos(0);
 //	ypos = yRadius * sin(0);
-	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-	RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+	RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 	WitTim(100);
 
 	for( deg = 0; deg <= 360; deg += DEGSTEP ) // 0-360 degree
 	{
 //		xpos = xRadius * cos(deg * PI/180);
 //		ypos = yRadius * sin(deg * PI/180);
-    	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-		RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+    	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+		RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 
 		xMaxHall = 0;
 		yMaxHall = 0;
@@ -344,14 +344,14 @@ UINT_16  HallCheck(void)
 	return(ret);
 }
 
-unsigned short AccuracyH(int flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
+unsigned short AccuracyH(float flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	unsigned int xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     unsigned short xng = 0, yng = 0;
     unsigned short deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
 	unsigned int xGyrogain, yGyrogain;
     unsigned int xGLenz, yGLenz;
     unsigned int xG2x4xb, yG2x4xb;
@@ -393,16 +393,16 @@ unsigned short AccuracyH(int flACCURACY, unsigned short RADIUS, unsigned short u
 	// Circle check
 	xpos = xRadius * cos(0);
 	ypos = yRadius * sin(0);
-	RamWrite32A(HALL_RAM_HXOFF1, int2fix(xpos));
-	RamWrite32A(HALL_RAM_HYOFF1, int2fix(ypos));
+	RamWrite32A(HALL_RAM_HXOFF1, float2fix(xpos));
+	RamWrite32A(HALL_RAM_HYOFF1, float2fix(ypos));
 	WitTim(WAIT_MSEC1);
 
 	for( deg = 0; deg <= 360; deg += usDEGSTEP ) // 0-360 degree
 	{
 		xpos = xRadius * cos(deg * PI/180);
 		ypos = yRadius * sin(deg * PI/180);
-    	RamWrite32A(HALL_RAM_HXOFF1, int2fix(xpos));
-		RamWrite32A(HALL_RAM_HYOFF1, int2fix(ypos));
+    	RamWrite32A(HALL_RAM_HXOFF1, float2fix(xpos));
+		RamWrite32A(HALL_RAM_HYOFF1, float2fix(ypos));
 
 		xMaxHall = 0;
 		yMaxHall = 0;
@@ -439,7 +439,7 @@ unsigned short AccuracyH(int flACCURACY, unsigned short RADIUS, unsigned short u
 }
 
 //unsigned short HallCheck(void)
-UINT_16 HallCheckH(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
+UINT_16 HallCheckH(float flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
 {
 	INT_16	i;
 //	unsigned short ret = Accuracy();
@@ -470,14 +470,14 @@ UINT_16 HallCheckH(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WA
 	return( ret );
 }
 
-unsigned short AccuracyG(int flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
+unsigned short AccuracyG(float flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3)
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	unsigned int xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     unsigned short xng = 0, yng = 0;
     unsigned short deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
     unsigned int xGyroLimit, yGyroLimit;
 	unsigned int xGyrogain, yGyrogain;
     unsigned int xGLenz, yGLenz;
@@ -520,16 +520,16 @@ unsigned short AccuracyG(int flACCURACY, unsigned short RADIUS, unsigned short u
 	// Circle check
 	xpos = xRadius * cos(0);
 	ypos = yRadius * sin(0);
-	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-	RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+	RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 	WitTim(WAIT_MSEC1);
 
 	for( deg = 0; deg <= 360; deg += usDEGSTEP ) // 0-360 degree
 	{
 		xpos = xRadius * cos(deg * PI/180);
 		ypos = yRadius * sin(deg * PI/180);
-    	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-		RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+    	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+		RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 
 		xMaxHall = 0;
 		yMaxHall = 0;
@@ -570,7 +570,7 @@ TRACE( "( ypos, yHax2, yhall, yMax ) = ( %f, %f, %f, %f)\n", ypos , fix2float(yH
 }
 
 //unsigned short HallCheck(void)
-UINT_16 HallCheckG(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
+UINT_16 HallCheckG(float flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
 {
 	INT_16	i;
 	UINT_16 ret;
@@ -612,14 +612,14 @@ UINT_16 HallCheckG(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WA
 /*****			calculate by use linearity correction data			*****/
 /************************************************************************/
 #define	pixelsize	1.22f	// um/pixel
-UINT_16 AccuracyL(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
+UINT_16 AccuracyL(float flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	UINT_32 xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     UINT_16	xng = 0, yng = 0;
     UINT_16	deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
 	UINT_32		uixpxl,uiypxl;
 	INT_32		sixstp,siystp;
 	UINT_32		linbuf[8];	/* pos1�`pos7, step */
@@ -643,8 +643,8 @@ TRACE( "uixpxl %08x, uiypxl %08x \n", uixpxl , uiypxl );
 TRACE( "sixstp %08x, siystp %08x \n", sixstp , siystp );
 	
 	// Calculate Radius (100um)
-	xRadius = ( fabsf(fix2float(sixstp)) * 10.0f) / ((int)uixpxl * pixelsize);
-	yRadius = ( fabsf(fix2float(siystp)) * 10.0f) / ((int)uiypxl * pixelsize);
+	xRadius = ( fabsf(fix2float(sixstp)) * 10.0f) / ((float)uixpxl * pixelsize);
+	yRadius = ( fabsf(fix2float(siystp)) * 10.0f) / ((float)uiypxl * pixelsize);
 TRACE( "xRadiusA %f, yRadiusA %f \n", xRadius , yRadius );
 
 	// Calculate Limit
@@ -655,7 +655,7 @@ TRACE( "xRadiusA %f, yRadiusA %f \n", xRadius , yRadius );
 	xRadius = xRadius * RADIUS ;
 	yRadius = yRadius * RADIUS ;
 TRACE( "xRadiusM %f, yRadiusM %f \n", xRadius , yRadius );
-TRACE( "xRadiusM %08x, yRadiusM %08x \n", int2fix(xRadius) , int2fix(yRadius) );
+TRACE( "xRadiusM %08x, yRadiusM %08x \n", float2fix(xRadius) , float2fix(yRadius) );
 
 	xMaxAcc = 0;
 	yMaxAcc = 0;
@@ -663,16 +663,16 @@ TRACE( "xRadiusM %08x, yRadiusM %08x \n", int2fix(xRadius) , int2fix(yRadius) );
 	// Circle check
 	xpos = xRadius * cos(0);
 	ypos = yRadius * sin(0);
-	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-	RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+	RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 	WitTim(WAIT_MSEC1);
 
 	for( deg = 0; deg <= 360; deg += usDEGSTEP ) // 0-360 degree
 	{
 		xpos = xRadius * cos(deg * PI/180);
 		ypos = yRadius * sin(deg * PI/180);
-    	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
-		RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+    	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
+		RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 
 		xMaxHall = 0;
 		yMaxHall = 0;
@@ -709,7 +709,7 @@ TRACE( "xRadiusM %08x, yRadiusM %08x \n", int2fix(xRadius) , int2fix(yRadius) );
 }
 
 //unsigned short HallCheck(void)
-UINT_16 HallCheckL(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
+UINT_16 HallCheckL(float flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3)
 {
 	INT_16 i;
 	UINT_16 ret = AccuracyL(flACCURACY, RADIUS, usDEGSTEP, WAIT_MSEC1, WAIT_MSEC2, WAIT_MSEC3);
@@ -739,14 +739,14 @@ UINT_16 HallCheckL(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WA
 	return( ret );
 }
 
-unsigned short AccuracyS(int flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3 , unsigned char ACT_AXIS)
+unsigned short AccuracyS(float flACCURACY, unsigned short RADIUS, unsigned short usDEGSTEP, unsigned short WAIT_MSEC1, unsigned short WAIT_MSEC2, unsigned short WAIT_MSEC3 , unsigned char ACT_AXIS)
 {
-	int xpos, ypos;
+	float xpos, ypos;
 	unsigned int xhall_value, yhall_value;
-	int xMaxHall, yMaxHall;
+	float xMaxHall, yMaxHall;
     unsigned short xng = 0, yng = 0;
     unsigned short deg;
-    int xRadius, yRadius;
+    float xRadius, yRadius;
     unsigned int xGyroLimit, yGyroLimit;
 	unsigned int xGyrogain, yGyrogain;
     unsigned int xGLenz, yGLenz;
@@ -790,9 +790,9 @@ unsigned short AccuracyS(int flACCURACY, unsigned short RADIUS, unsigned short u
 	xpos = xRadius * sin(0);
 	ypos = yRadius * sin(0);
 	if(ACT_AXIS == X_DIR){
-		RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
+		RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
 	}else{
-		RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+		RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 	}
 	WitTim(WAIT_MSEC1);
 
@@ -802,9 +802,9 @@ unsigned short AccuracyS(int flACCURACY, unsigned short RADIUS, unsigned short u
 		xpos = xRadius * sin(deg * PI/180);
 		ypos = yRadius * sin(deg * PI/180);
 		if(ACT_AXIS == X_DIR){
-	    	RamWrite32A(HALL_RAM_GYROX_OUT, int2fix(xpos));
+	    	RamWrite32A(HALL_RAM_GYROX_OUT, float2fix(xpos));
 		}else{
-			RamWrite32A(HALL_RAM_GYROY_OUT, int2fix(ypos));
+			RamWrite32A(HALL_RAM_GYROY_OUT, float2fix(ypos));
 		}
 
 		xMaxHall = 0;
@@ -853,7 +853,7 @@ unsigned short AccuracyS(int flACCURACY, unsigned short RADIUS, unsigned short u
 }
 
 //unsigned short HallCheck(void)
-UINT_16 HallCheckS(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3 , UINT_8 ACT_AXIS)
+UINT_16 HallCheckS(float flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WAIT_MSEC1, UINT_16 WAIT_MSEC2, UINT_16 WAIT_MSEC3 , UINT_8 ACT_AXIS)
 {
 	INT_16	i;
 //	unsigned short ret = Accuracy();
@@ -887,8 +887,8 @@ UINT_16 HallCheckS(int flACCURACY, UINT_16 RADIUS, UINT_16 usDEGSTEP, UINT_16 WA
 #if 0
 unsigned char SMA_Sensitivity( unsigned short LIMIT_RANGE_SMA, unsigned short RADIUS, unsigned short DEGREE, unsigned short WAIT_MSEC1)
 {
-	int xpos, ypos;
-    int xRadius, yRadius;
+	float xpos, ypos;
+    float xRadius, yRadius;
 	unsigned int xGyrogain, yGyrogain;
     unsigned int xGLenz, yGLenz;
 
@@ -906,14 +906,14 @@ unsigned char SMA_Sensitivity( unsigned short LIMIT_RANGE_SMA, unsigned short RA
 
 
 	// Radius change (by RADIUS value)
-	xRadius = xRadius * (int)RADIUS / (int)LIMIT_RANGE_SMA;
-	yRadius = yRadius * (int)RADIUS / (int)LIMIT_RANGE_SMA;
+	xRadius = xRadius * (float)RADIUS / (float)LIMIT_RANGE_SMA;
+	yRadius = yRadius * (float)RADIUS / (float)LIMIT_RANGE_SMA;
 
 	xpos = xRadius * cos(DEGREE * PI/180);
 	ypos = yRadius * sin(DEGREE * PI/180);
 
-	RamWrite32A(0x610, int2fix(xpos));
-	RamWrite32A(0x61C, int2fix(ypos));
+	RamWrite32A(0x610, float2fix(xpos));
+	RamWrite32A(0x61C, float2fix(ypos));
 
 	WitTim(WAIT_MSEC1);
 

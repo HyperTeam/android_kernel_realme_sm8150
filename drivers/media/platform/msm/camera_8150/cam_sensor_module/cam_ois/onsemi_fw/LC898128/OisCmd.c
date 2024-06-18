@@ -2419,9 +2419,9 @@ void	OscStb( void )
 UINT_8	GyrSlf( void )
 {
 	UINT_8		UcFinSts = 0 ;
-	int		flGyrRltX ;
-	int		flGyrRltY ;
-	int		flMeasureAveValueA , flMeasureAveValueB ;
+	float		flGyrRltX ;
+	float		flGyrRltY ;
+	float		flMeasureAveValueA , flMeasureAveValueB ;
 	INT_32		SlMeasureParameterNum ;
 	INT_32		SlMeasureParameterA, SlMeasureParameterB ;
 	UnllnVal	StMeasValueA , StMeasValueB ;
@@ -2465,8 +2465,8 @@ UINT_8	GyrSlf( void )
 	RamRead32A( StMeasFunc_MFB_LLiIntegral2 	, &StMeasValueB.StUllnVal.UlLowVal ) ;	// Y axis
 	RamRead32A( StMeasFunc_MFB_LLiIntegral2 + 4	, &StMeasValueB.StUllnVal.UlHigVal ) ;
 
-	flMeasureAveValueA = (int)((( (INT_64)StMeasValueA.UllnValue >> 16 ) / (int)SlMeasureParameterNum ) ) ;
-	flMeasureAveValueB = (int)((( (INT_64)StMeasValueB.UllnValue >> 16 ) / (int)SlMeasureParameterNum ) ) ;
+	flMeasureAveValueA = (float)((( (INT_64)StMeasValueA.UllnValue >> 16 ) / (float)SlMeasureParameterNum ) ) ;
+	flMeasureAveValueB = (float)((( (INT_64)StMeasValueB.UllnValue >> 16 ) / (float)SlMeasureParameterNum ) ) ;
 
 	flGyrRltX = flMeasureAveValueA / 175.0 ;	// sensitivity 175 dps
 	flGyrRltY = flMeasureAveValueB / 175.0 ;	// sensitivity 175 dps
@@ -2511,8 +2511,8 @@ UINT_8	GyrSlf( void )
 	RamRead32A( StMeasFunc_MFB_LLiIntegral2 	, &StMeasValueB.StUllnVal.UlLowVal ) ;	// Y axis
 	RamRead32A( StMeasFunc_MFB_LLiIntegral2 + 4	, &StMeasValueB.StUllnVal.UlHigVal ) ;
 
-	flMeasureAveValueA = (int)((( (INT_64)StMeasValueA.UllnValue >> 16 ) / (int)SlMeasureParameterNum ) ) ;
-	flMeasureAveValueB = (int)((( (INT_64)StMeasValueB.UllnValue >> 16 ) / (int)SlMeasureParameterNum ) ) ;
+	flMeasureAveValueA = (float)((( (INT_64)StMeasValueA.UllnValue >> 16 ) / (float)SlMeasureParameterNum ) ) ;
+	flMeasureAveValueB = (float)((( (INT_64)StMeasValueB.UllnValue >> 16 ) / (float)SlMeasureParameterNum ) ) ;
 
 	flGyrRltX = flMeasureAveValueA / GYRO_SENSITIVITY ;
 	flGyrRltY = flMeasureAveValueB / GYRO_SENSITIVITY ;
@@ -2912,7 +2912,7 @@ void	MesFil2( UINT_16	UsMesFreq )
 	UINT_32	UlMeasFilA1 , UlMeasFilB1 , UlMeasFilC1 , UlTempval ;
 	UINT_32	UlMeasFilA2 , UlMeasFilC2 ;
 		
-	UlTempval = (UINT_32)(2147483647 * (int)UsMesFreq / ((int)UsMesFreq + DivOffset ));
+	UlTempval = (UINT_32)(2147483647 * (float)UsMesFreq / ((float)UsMesFreq + DivOffset ));
 	UlMeasFilA1	=	0x7fffffff - UlTempval;
 	UlMeasFilB1	=	~UlMeasFilA1 + 0x00000001;	
 	UlMeasFilC1	=	0x7FFFFFFF - ( UlTempval << 1 ) ;
@@ -3022,7 +3022,7 @@ const UINT_8 PACT1Tbl[] = { 0x20, 0xDF };	/* [ACT_02][ACT_01][ACT_03] */
 const UINT_8 PACT2Tbl[] = { 0x46, 0xB9 };	/* [---] */
 
 
-UINT_8 SetAngleCorrection( int DegreeGap, UINT_8 SelectAct, UINT_8 Arrangement )
+UINT_8 SetAngleCorrection( float DegreeGap, UINT_8 SelectAct, UINT_8 Arrangement )
 {
 	double OffsetAngle = 0.0f;
 	double OffsetAngleV_slt = 0.0f;
@@ -3251,7 +3251,7 @@ UINT_8	TstActMov( UINT_8 UcDirSel )
 	INT_32	SlMeasureParameterNum ;
 	INT_32	SlMeasureParameterA , SlMeasureParameterB ;
 	UnllnVal	StMeasValueA  , StMeasValueB ;
-	int		SfLimit , Sfzoom , Sflenz , Sfshift ;
+	float		SfLimit , Sfzoom , Sflenz , Sfshift ;
 	UINT_32		UlLimit , Ulzoom , Ullenz , Ulshift , UlActChkLvl ;
 	UINT_8		i;
 	UINT_32		UlReturnVal;
@@ -3270,23 +3270,23 @@ UINT_8	TstActMov( UINT_8 UcDirSel )
 
 TRACE(" DIR = %d, lmt = %08x, zom = %08x , lnz = %08x ,sft = %08x \n", UcDirSel, (unsigned int)UlLimit , (unsigned int)Ulzoom , (unsigned int)Ullenz , (unsigned int)Ulshift  ) ;
 
-	SfLimit = (int)UlLimit / (int)0x7FFFFFFF;
+	SfLimit = (float)UlLimit / (float)0x7FFFFFFF;
 	if( Ulzoom == 0){
 		Sfzoom = 0;
 	}else{
-		Sfzoom = (int)abs(Ulzoom) / (int)0x7FFFFFFF;
+		Sfzoom = (float)abs(Ulzoom) / (float)0x7FFFFFFF;
 	}
 	if( Ullenz == 0){
 		Sflenz = 0;
 	}else{
-		Sflenz = (int)Ullenz / (int)0x7FFFFFFF;
+		Sflenz = (float)Ullenz / (float)0x7FFFFFFF;
 	}
 	Ulshift = ( Ulshift & 0x0000FF00) >> 8 ;	
 	Sfshift = 1;
 	for( i = 0 ; i < Ulshift ; i++ ){
 		Sfshift *= 2;
 	}
-	UlActChkLvl = (UINT_32)( (int)0x7FFFFFFF * SfLimit * Sfzoom * Sflenz * Sfshift * ACT_MARGIN );
+	UlActChkLvl = (UINT_32)( (float)0x7FFFFFFF * SfLimit * Sfzoom * Sflenz * Sfshift * ACT_MARGIN );
 TRACE(" lvl = %08x \n", (unsigned int)UlActChkLvl  ) ;
 
 	SlMeasureParameterNum	=	ACT_CHK_NUM ;

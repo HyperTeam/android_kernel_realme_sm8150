@@ -19,9 +19,9 @@
 
 typedef struct tag_Dual_Axis
 {
-	int xpos;
-	int xhall;
-	int ypos;
-	int yhall;
+	float xpos;
+	float xhall;
+	float ypos;
+	float yhall;
 }Dual_Axis_t;
 
