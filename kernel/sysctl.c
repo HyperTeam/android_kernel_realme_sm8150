@@ -274,7 +274,7 @@ static int bpf_unpriv_handler(struct ctl_table *table, int write,
 	if (write && !ret) {
 		if (locked_state && unpriv_enable != 1)
 			return -EPERM;
-		*(int *)table->data = unpriv_enable;
+		*(int *)table->data = unpriv_enable;    
 	}
 
 	unpriv_ebpf_notify(unpriv_enable);

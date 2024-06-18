@@ -232,7 +232,7 @@ static bool bpf_is_jmp_and_has_target(const struct bpf_insn *insn)
 
 static int bpf_adj_delta_to_off(struct bpf_insn *insn, u32 pos, u32 delta,
 				u32 curr, const bool probe_pass)
-{
+
 	const s32 off_min = S16_MIN, off_max = S16_MAX;
 	s32 off = insn->off;
 
@@ -250,6 +250,7 @@ static int bpf_adj_delta_to_off(struct bpf_insn *insn, u32 pos, u32 delta,
 static int bpf_adj_branches(struct bpf_prog *prog, u32 pos, u32 delta,
 			    const bool probe_pass)
 {
+
 	u32 i, insn_cnt = prog->len + (probe_pass ? delta : 0);
 	struct bpf_insn *insn = prog->insnsi;
 	int ret = 0;
@@ -555,7 +556,7 @@ static int __init bpf_jit_charge_init(void)
 {
 	/* Only used as heuristic here to derive limit. */
 	bpf_jit_limit_max = bpf_jit_alloc_exec_limit();
-	bpf_jit_limit = min_t(u64, round_up(bpf_jit_limit_max >> 1,
+	bpf_jit_limit = min_t(u64, round_up(bpf_jit_limit_max >> 2,
 					    PAGE_SIZE), LONG_MAX);
 	return 0;
 }
@@ -1497,13 +1498,19 @@ struct bpf_prog *bpf_prog_select_runtime(struct bpf_prog *fp, int *err)
 	 * valid program, which in this case would simply not
 	 * be JITed, but falls back to the interpreter.
 	 */
-	fp = bpf_int_jit_compile(fp);
+	if (!bpf_prog_is_dev_bound(fp->aux)) {
+		fp = bpf_int_jit_compile(fp);
 #ifdef CONFIG_BPF_JIT_ALWAYS_ON
-	if (!fp->jited) {
-		*err = -ENOTSUPP;
-		return fp;
-	}
+		if (!fp->jited) {
+			*err = -ENOTSUPP;
+			return fp;
+		}
 #endif
+	} else {
+		*err = bpf_prog_offload_compile(fp);
+		if (*err)
+			return fp;
+	}
 	bpf_prog_lock_ro(fp);
 
 	/* The tail call compatibility check can only be done at
@@ -1629,11 +1636,51 @@ int bpf_prog_array_copy(struct bpf_prog_array __rcu *old_array,
 	return 0;
 }
 
+int bpf_prog_array_length(struct bpf_prog_array __rcu *progs)
+{
+	struct bpf_prog **prog;
+	u32 cnt = 0;
+
+	rcu_read_lock();
+	prog = rcu_dereference(progs)->progs;
+	for (; *prog; prog++)
+		cnt++;
+	rcu_read_unlock();
+	return cnt;
+}
+
+int bpf_prog_array_copy_to_user(struct bpf_prog_array __rcu *progs,
+				__u32 __user *prog_ids, u32 cnt)
+{
+	struct bpf_prog **prog;
+	u32 i = 0, id;
+
+	rcu_read_lock();
+	prog = rcu_dereference(progs)->progs;
+	for (; *prog; prog++) {
+		id = (*prog)->aux->id;
+		if (copy_to_user(prog_ids + i, &id, sizeof(id))) {
+			rcu_read_unlock();
+			return -EFAULT;
+		}
+		if (++i == cnt) {
+			prog++;
+			break;
+		}
+	}
+	rcu_read_unlock();
+	if (*prog)
+		return -ENOSPC;
+	return 0;
+}
+
 static void bpf_prog_free_deferred(struct work_struct *work)
 {
 	struct bpf_prog_aux *aux;
 
 	aux = container_of(work, struct bpf_prog_aux, work);
+	if (bpf_prog_is_dev_bound(aux))
+		bpf_prog_offload_destroy(aux->prog);
 	bpf_jit_free(aux->prog);
 }
 
